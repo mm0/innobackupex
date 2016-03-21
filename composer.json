@@ -1,0 +1,13 @@
+{
+    "name": "tradesy/innobackupex",
+    "description": "Wrapper for innobackupex incremental backup/restore with ability to store backups on various repository (AWS S3, Google)",
+    "type": "php",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Matt Margolin",
+            "email": "matt@tradesy.com"
+        }
+    ],
+    "require": {}
+}

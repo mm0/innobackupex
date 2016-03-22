@@ -31,9 +31,10 @@ class Configuration
 
     public function __construct(
         $host = "localhost",
-        $port = 3306,
         $user = "root",
-        $password = ""
+        $password = "",
+        $port = 3306
+
     ) {
         $this->host = $host;
         $this->port = $port;
@@ -49,7 +50,8 @@ class Configuration
             $this->user,
             $this->password,
             '',
-            $this->port);
+            $this->port
+        );
         if (!$connect || mysqli_connect_errno()) {
             throw new MySQLConnectionException(
                 "Unable to Connect to MySQL Server Using Credentials provided. Error: " .

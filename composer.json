@@ -9,5 +9,10 @@
             "email": "matt@tradesy.com"
         }
     ],
+    "autoload": {
+        "psr-0": {
+            "Tradesy\\Innobackupex": "src/",
+        }
+    },
     "require": {}
 }

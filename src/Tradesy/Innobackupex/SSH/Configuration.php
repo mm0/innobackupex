@@ -109,7 +109,7 @@ class Configuration
     protected function verifyFiles()
     {
         foreach (['public_key_file', 'private_key_file'] as $file) {
-            if (!file_exist($this->{$file})) {
+            if (!file_exists($this->{$file})) {
                 throw new FileNotFoundException(
                     "SSH Configuration File: " . $this->{$file} .
                     "Does not exist",

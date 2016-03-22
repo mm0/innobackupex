@@ -11,7 +11,7 @@
     ],
     "autoload": {
         "psr-0": {
-            "Tradesy\\Innobackupex": "src/"
+            "Tradesy\\Innobackupex": "src/Innobackupex/"
         }
     },
     "require": {}

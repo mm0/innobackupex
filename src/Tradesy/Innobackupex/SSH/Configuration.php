@@ -1,8 +1,8 @@
 <?php
 
 namespace Tradesy\Innobackupex\SSH;
-
-
+use Tradesy\Innobackupex\Exceptions\FileNotFoundException;
+use Tradesy\Innobackupex\Exceptions\FileNotReadableException;
 /**
  * Class Connection
  * @package Tradesy\Innobackupex

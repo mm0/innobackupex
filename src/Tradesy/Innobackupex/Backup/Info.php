@@ -8,15 +8,19 @@
 namespace Tradesy\Innobackupex\Backup;
 
 class Info {
-$BackupInfo = array(
-"latest_full_backup" => $this->getActualDirectory(),
-"latest_full_backup_s3_directory" => date("m-j-Y--H-i-s", $this->getStartDate()) . "/",
-"latest_full_backup_s3_bucket" => $this->getS3Bucket(),
-"latest_full_backup_s3_full_path" => $this->getS3Bucket() . $this->getS3Name() . ".tar.gz",
-"latest_full_backup_create_datetime" => date("m-j-Y--H-i-s", $this->getStartDate()),
-"latest_full_backup_local_path" => $this->getFullPathToBackup(),
-"latest_incremental_backup" => array(),
-"incremental_backup_list" => array()
-);
-
+    protected $backup_directory;
+    protected $incremental_backups = array();
+    protected $latest_full_backup;
+    
+    public function __construct(
+        $backup_directory,
+        $latest_full_backup,
+        $incremental_backups
+    ){
+        
+    }
+    
+    protected function addIncrementalBackup($Backup){
+        
+    }
 }

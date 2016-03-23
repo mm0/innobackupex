@@ -1,9 +1,9 @@
 <?php
 
 namespace Tradesy\Innobackupex\Backup;
-use \Tradesy\Innobackupex\Backup\Abstract;
+use \Tradesy\Innobackupex\Backup\AbstractBackup;
 
-class Incremental extends Abstract{
+class Incremental extends AbstractBackup{
 
     protected $base_dir;
 
@@ -28,7 +28,6 @@ class Incremental extends Abstract{
     }
 
     public function __construct($connection){
-        $this->setType("INCREMENTAL");
         parent::__construct($connection);
     }
     public function setS3Name(){

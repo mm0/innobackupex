@@ -213,13 +213,6 @@ abstract class AbstractBackup
         $this->save_type = $save_type;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getType()
-    {
-        return $this->type;
-    }
 
     /**
      * @return ConnectionInterface
@@ -285,10 +278,20 @@ abstract class AbstractBackup
     }
 
 
+    /**
+     * AbstractBackup constructor.
+     * @param Configuration $mysql_configuration
+     * @param ConnectionInterface $connection
+     * @param SaveInterface[] $save_module
+     * @param bool $compress
+     * @param string $memory
+     * @param string $save_directory
+     * @param string $save_directory_prefix
+     */
     public function __construct(
-        \Tradesy\Innobackupex\MySQL\Configuration $mysql_configuration,
-        \Tradesy\Innobackupex\ConnectionInterface $connection,
-        \Tradesy\Innobackupex\SaveInterface $save_module,
+        Configuration $mysql_configuration,
+        ConnectionInterface $connection,
+        array $save_module,
         $compress                       = false,
         $memory                         = "1G",
         $save_directory                 = "tmp",
@@ -388,7 +391,7 @@ abstract class AbstractBackup
         $file_contents = $this->connection->getFileContents($remote);
         //TODO: Check whether file exists
         
-        $this->BackupInfo = json_decode($file_contents, true);
+        $this->BackupInfo = unserialize($file_contents, true);
 
         return $this->BackupInfo;
     }

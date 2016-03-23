@@ -29,6 +29,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     function __construct(Configuration $config)
     {
         $this->config = $config;
+        $this->verify();
     }
 
     public function verify()
@@ -36,8 +37,10 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         $this->verifySSHServerListening();
         $this->verifyConnection();
     }
-
-    function getConnection($force_reconnect = false)
+    /**
+     * @return resource
+     */
+    public function getConnection($force_reconnect = false)
     {
         if ($this->authenticated && !$force_reconnect) {
             return $this->connection;
@@ -57,11 +60,13 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
 
         return $this->connection;
     }
-
+    /**
+     * @return ConnectionResponse
+     */
     public function executeCommand($command)
     {
         $stream = ssh2_exec(
-            $this->getConnection,
+            $this->getConnection(),
             $command
         );
         $stderrStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
@@ -79,16 +84,19 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
 
     public function getFileContents($file)
     {
-        $temp_file = tempnam();
+        $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
         ssh2_scp_recv($this->getConnection(), $file, $temp_file);
         $contents = file_get_contents($temp_file);
-        delete($temp_file);
+        unlink($temp_file);
         return $contents;
+    }
+    public function getTemporaryDirectoryPath(){
+        return "/tmp/";
     }
 
     public function writeFileContents($file, $contents, $mode=0644)
     {
-        $temp_file = tempnam();
+        $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
         file_put_contents($temp_file,$contents);
         ssh2_scp_send($this->getConnection(), $temp_file, $file, $mode);
         delete($temp_file);

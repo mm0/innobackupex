@@ -34,6 +34,7 @@ abstract class AbstractBackup
     protected $memory_limit;
     protected $actual_directory;
     protected $backup_info_filename = "tradesy_percona_backup_info";
+    protected $backup_info_directory = "/tmp/";
     protected $BackupInfo;
 
     /**
@@ -50,6 +51,21 @@ abstract class AbstractBackup
     public function setBackupInfoFilename($backup_info_filename)
     {
         $this->backup_info_filename = $backup_info_filename;
+    }
+    /**
+     * @return string
+     */
+    public function getBackupInfoDirectory()
+    {
+        return $this->backup_info_directory;
+    }
+
+    /**
+     * @param string $backup_info_filename
+     */
+    public function setBackupInfoDirectory($backup_info_directory)
+    {
+        $this->backup_info_directory = $backup_info_directory;
     }
 
 
@@ -206,11 +222,18 @@ abstract class AbstractBackup
     }
 
     /**
-     * @return array
+     * @return ConnectionInterface
      */
     public function getConnection()
     {
         return $this->connection;
+    }
+    /**
+     * @return Configuration
+     */
+    public function getMysqlConfiguration()
+    {
+        return $this->mysql_configuration;
     }
 
     /**
@@ -340,7 +363,7 @@ abstract class AbstractBackup
     {
         $this->test_innobackupex_exist();
         if ($this->getCompress()) {
-            $this->test_s3cmd();
+         //  $this->test_s3cmd();
         }
         $this->start();
         $this->PerformBackup();
@@ -361,8 +384,10 @@ abstract class AbstractBackup
 
     public function fetchBackupInfo()
     {
-        $remote = "/home/" . $this->SSH_User . "/" . $this->getBackupInfoFilename();
+        $remote = $this->getBackupInfoDirectory() . $this->getBackupInfoFilename();
         $file_contents = $this->connection->getFileContents($remote);
+        //TODO: Check whether file exists
+        
         $this->BackupInfo = json_decode($file_contents, true);
 
         return $this->BackupInfo;

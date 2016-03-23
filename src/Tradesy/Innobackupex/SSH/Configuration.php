@@ -100,11 +100,18 @@ class Configuration
         return $this->private_key_file;
     }
     /**
+     * @return string  The SSH Key Passphrase.
+     */
+    public function passphrase()
+    {
+        return $this->passphrase;
+    }
+    /**
      * @return array  The ssh options.
      */
     public function options()
     {
-        return $this->options;
+        return $this->ssh_options;
     }
     protected function verifyFiles()
     {

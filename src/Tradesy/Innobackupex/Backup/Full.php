@@ -7,8 +7,6 @@ use \Tradesy\Innobackupex\Backup\AbstractBackup;
 class Full extends AbstractBackup
 {
 
-    protected $type = "FULL";
-
     public function setSaveName()
     {
         $this->save_name = "full_backup_" . date("m-j-Y--H-i-s", $this->getStartDate());
@@ -21,18 +19,26 @@ class Full extends AbstractBackup
 
     public function PerformBackup()
     {
-        $command = "sudo innobackupex --no-timestamp " . $this->getActualDirectory();
-        echo "Backup Command: $command \n";
-        $stream = ssh2_exec($this->SSH_Connection, $command);
-        $stderrStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
-        stream_set_blocking($stderrStream, true);
-        stream_set_blocking($stream, true);
-        $stdout = stream_get_contents($stream);
-        $stderr = stream_get_contents($stderrStream);
+        $user = $this->getMysqlConfiguration()->getUsername();
+        $password  = $this->getMysqlConfiguration()->getPassword();
+        $host = $this->getMysqlConfiguration()->getHost();
+        $port = $this->getMysqlConfiguration()->getPort();
+        $directory = $this->getActualDirectory();
 
-        echo $stdout . "\n";
-        echo $stderr . "\n";
-        fclose($stream);
+        $command =
+            "sudo innobackupex" .
+            " --user=" . $user .
+            " --password=" . $password .
+            " --host=" . $host .
+            " --port=" . $port .
+            " --no-timestamp" .
+            " " . $directory ;
+
+        echo "Backup Command: $command \n";
+        $response = $this->getConnection()->executeCommand($command);
+
+        echo $response->stdout() . "\n";
+        echo $response->stderr() . "\n";
     }
 
     public function SaveBackupInfo()
@@ -64,7 +70,7 @@ class Full extends AbstractBackup
         if (strlen($file) > 10) {
             echo "Deleting Old Full Backups\n";
             $command = "sudo rm -rf $file";
-            $response = $this->connection->executeCommand(
+            $response = $this->getConnection()->executeCommand(
                 $command
             );
         }
@@ -75,7 +81,7 @@ class Full extends AbstractBackup
         echo "Deleting Old Incremental Backups\n";
         if (count($this->BackupInfo['latest_incremental_backup'])) {
             $command = "sudo rm -rf $prefix";
-            $response = $this->connection->executeCommand(
+            $response = $this->getConnection()->executeCommand(
                 $command
             );
         }

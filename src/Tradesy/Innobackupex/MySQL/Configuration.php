@@ -5,9 +5,7 @@ namespace Tradesy\Innobackupex\MySQL;
 use \Tradesy\Innobackupex\Exceptions\MySQLConnectionException;
 
 /**
- * A utility class, designed to store mysql credentials
- *
- *
+ * A utility class, designed to store Mysql credentials
  */
 class Configuration
 {
@@ -59,6 +57,33 @@ class Configuration
                 0
             );
         }
-
+    }
+    /**
+     * @return string
+     */
+    public function getUsername()
+    {
+        return $this->user;
+    }
+    /**
+     * @return string
+     */
+    public function getPassword()
+    {
+        return $this->password;
+    }
+    /**
+     * @return string
+     */
+    public function getHost()
+    {
+        return $this->host;
+    }
+    /**
+     * @return int
+     */
+    public function getPort()
+    {
+        return $this->port;
     }
 }

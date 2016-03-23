@@ -7,7 +7,7 @@ use Tradesy\Innobackupex\ConnectionInterface;
 use Tradesy\Innobackupex\Exceptions\InnobackupexException;
 use Tradesy\Innobackupex\SaveInterface;
 
-abstract class Abstract
+abstract class AbstractBackup
 {
     protected $save_name;
     protected $full_path_to_backup;

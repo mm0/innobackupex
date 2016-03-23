@@ -1,10 +1,10 @@
 <?php
 
 namespace Tradesy\Innobackupex\Backup;
-use \Tradesy\Innobackupex\Backup\Abstract;
+use \Tradesy\Innobackupex\Backup\AbstractBackup;
 
 
-class Full extends Abstract
+class Full extends AbstractBackup
 {
 
     protected $type = "FULL";

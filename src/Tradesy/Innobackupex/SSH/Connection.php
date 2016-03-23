@@ -99,7 +99,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
         file_put_contents($temp_file,$contents);
         ssh2_scp_send($this->getConnection(), $temp_file, $file, $mode);
-        delete($temp_file);
+        unlink($temp_file);
     }
 
     protected
@@ -152,5 +152,14 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
             return $this->verifyCredentials();
         }
 
+    }
+
+    /**
+     * @param string $file
+     * @return boolean
+     */
+    public
+    function file_exists($file){
+         return $this->executeCommand("if [ -f " . $file . " ] || [ -d " . $file . " ] ; then echo 'true'; fi ")->stdout() == "true";
     }
 }

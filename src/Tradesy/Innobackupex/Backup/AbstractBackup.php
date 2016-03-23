@@ -3,6 +3,7 @@
 namespace Tradesy\Innobackupex\Backup;
 
 use Tradesy\Innobackupex\MySQL\Configuration;
+use Tradesy\Innobackupex\Encryption\Configuration as EncryptionConfiguration;
 use Tradesy\Innobackupex\ConnectionInterface;
 use Tradesy\Innobackupex\Exceptions\InnobackupexException;
 use Tradesy\Innobackupex\SaveInterface;
@@ -25,9 +26,13 @@ abstract class AbstractBackup
      */
     protected $connection;
     /**
-     * @var \Tradesy\Innobackupex\SaveInterface
+     * @var \Tradesy\Innobackupex\SaveInterface[]
      */
     protected $save_module;
+    /**
+     * @var EncryptionConfiguration
+     */
+    protected $encryption_configuration;
     protected $date;
     protected $start_date;
     protected $end_date;
@@ -36,6 +41,40 @@ abstract class AbstractBackup
     protected $backup_info_filename = "tradesy_percona_backup_info";
     protected $backup_info_directory = "/tmp/";
     protected $BackupInfo;
+
+
+
+    /**
+     * AbstractBackup constructor.
+     * @param Configuration $mysql_configuration
+     * @param ConnectionInterface $connection
+     * @param SaveInterface[] $save_module
+     * @param EncryptionConfiguration $enc_config
+     * @param bool $compress
+     * @param string $memory
+     * @param string $save_directory
+     * @param string $save_directory_prefix
+     */
+    public function __construct(
+        Configuration $mysql_configuration,
+        ConnectionInterface $connection,
+        array $save_modules,
+        EncryptionConfiguration $enc_config        = null,
+        $compress                       = false,
+        $memory                         = "1G",
+        $save_directory                 = "tmp",
+        $save_directory_prefix          = "full_backup"
+    ) {
+        $this->mysql_configuration      = $mysql_configuration;
+        $this->connection               = $connection;
+        $this->save_module              = $save_modules;
+        $this->encryption_configuration = $enc_config;
+        $this->compress                 = $compress;
+        $this->memory                   = $memory;
+        $this->save_directory           = $save_directory;
+        $this->save_directory_prefix    = $save_directory_prefix;
+
+    }
 
     /**
      * @return string
@@ -182,7 +221,7 @@ abstract class AbstractBackup
 
 
     /**
-     * @return mixed
+     * @return boolean
      */
     public function getCompress()
     {
@@ -190,7 +229,7 @@ abstract class AbstractBackup
     }
 
     /**
-     * @param mixed $compress
+     * @param boolean $compress
      */
     public function setCompress($compress)
     {
@@ -228,7 +267,13 @@ abstract class AbstractBackup
     {
         return $this->mysql_configuration;
     }
-
+    /**
+     * @return Configuration
+     */
+    public function getEncryptionConfiguration()
+    {
+        return $this->encryption_configuration;
+    }
     /**
      * @return mixed
      */
@@ -276,37 +321,6 @@ abstract class AbstractBackup
     {
         $this->end_date = $end_date;
     }
-
-
-    /**
-     * AbstractBackup constructor.
-     * @param Configuration $mysql_configuration
-     * @param ConnectionInterface $connection
-     * @param SaveInterface[] $save_module
-     * @param bool $compress
-     * @param string $memory
-     * @param string $save_directory
-     * @param string $save_directory_prefix
-     */
-    public function __construct(
-        Configuration $mysql_configuration,
-        ConnectionInterface $connection,
-        array $save_module,
-        $compress                       = false,
-        $memory                         = "1G",
-        $save_directory                 = "tmp",
-        $save_directory_prefix          = "full_backup"
-    ) {
-        $this->mysql_configuration      = $mysql_configuration;
-        $this->connection               = $connection;
-        $this->save_module              = $save_module;
-        $this->compress                 = $compress;
-        $this->memory                   = $memory;
-        $this->save_directory           = $save_directory;
-        $this->save_directory_prefix    = $save_directory_prefix;
-
-    }
-
 
     public function start()
     {
@@ -370,12 +384,20 @@ abstract class AbstractBackup
         }
         $this->start();
         $this->PerformBackup();
+        /**
+         * TODO: update $this->BackupInfo
+         */
         //  $this->ApplyLog();
         echo "Saved to " . $this->actual_directory . "\n";
-        $this->Compress();
-        $this->save_module->save($this->getSaveName());
-        $this->save_module->cleanup();
+        foreach($this->save_module as $saveModule){
 
+            $saveModule->save($this->getSaveName());
+            /*
+             * optionally store backup info with save modules
+             */
+            $saveModule->saveBackupInfo($this->BackupInfo);
+            $saveModule->cleanup();
+        }
         $this->PostHook();
         $this->end();
     }
@@ -387,32 +409,15 @@ abstract class AbstractBackup
 
     public function fetchBackupInfo()
     {
-        $remote = $this->getBackupInfoDirectory() . $this->getBackupInfoFilename();
-        $file_contents = $this->connection->getFileContents($remote);
-        //TODO: Check whether file exists
-        
-        $this->BackupInfo = unserialize($file_contents, true);
+        $remote_file = $this->getBackupInfoDirectory() . $this->getBackupInfoFilename();
 
-        return $this->BackupInfo;
-    }
-
-    private function UploadToS3()
-    {
-        if ($this->getCompress()) {
-            # upload compressed file to s3
-            $command = "sudo s3cmd put " . $this->getFullPathToBackup() . " " . $this->getS3Bucket() . $this->getS3Name() . ".tar.gz";
-            $stream = ssh2_exec($this->SSH_Connection, $command);
-            $stderrStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
-            stream_set_blocking($stream, true);
-            stream_set_blocking($stderrStream, true);
-            $stdout = stream_get_contents($stream);
-            $stderr = stream_get_contents($stderrStream);
-
-            echo $stdout . "\n";
-            echo $stderr . "\n";
-            fclose($stream);
-            fclose($stderrStream);
+        if ($this->getConnection()->file_exists($remote_file)) {
+            $file_contents = $this->getConnection()->getFileContents($remote_file);
+            $this->BackupInfo = unserialize($file_contents, true);
+        }else{
+            $this->BackupInfo = new Info();
         }
+        return $this->BackupInfo;
     }
 
     private function RemoveArchivedFile()
@@ -432,34 +437,7 @@ abstract class AbstractBackup
             $this->RemoveArchivedFile();
         }
     }
-
-    private function Compress()
-    {
-        if ($this->getCompress()) {
-            switch ($this->compressionType) {
-                case "gzip":
-                    break;
-
-                case "tar":
-                    $response = $this->connection->executeCommand(
-                        "sudo tar -C " .
-                        $this->getSaveDirectory() .
-                        " -zcvf  " .
-                        $save_file . " " .
-                        $this->getSaveName()
-                    );
-                    break;
-                case "innobackupex":
-                    ;
-                default:
-                    // build in compression, this function should do nothing
-                    ;
-            }
-        } else {
-            echo "Skipping Compression \n";
-        }
-    }
-
+    
 
     abstract function SaveBackupInfo();
 

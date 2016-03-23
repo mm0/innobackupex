@@ -4,6 +4,7 @@ namespace Tradesy\Innobackupex\S3\Remote;
 
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\SaveInterface;
+use Tradesy\Innobackupex\ConnectionInterface;
 
 class Upload implements SaveInterface {
 
@@ -15,8 +16,17 @@ class Upload implements SaveInterface {
     protected $remove_file_after_upload;
     protected $concurrency;
 
+    /**
+     * Upload constructor.
+     * @param $connection
+     * @param $bucket
+     * @param $key
+     * @param $region
+     * @param bool $remove_file_after_upload
+     * @param int $concurrency
+     */
     public function __construct(
-        $connection,
+        ConnectionInterface $connection,
         $bucket,
         $key,
         $region,
@@ -48,10 +58,21 @@ class Upload implements SaveInterface {
     }
     public function cleanup()
     {
-        $command = "sudo rm -f " . $this->getFullPathToBackup();
+        /* $command = "sudo rm -f " . $this->getFullPathToBackup();
         return $this->connection->executeCommand(
             $command
         );
+        */
+    }
+
+    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info){
+        $serialized = serialize($info);
+
+        $command = "echo '$serialized' | s3cmd put - s3://" . $this->bucket . "/tradesy_percona_backup_info";
+        echo "Upload latest backup info to S3 with command: $command \n";
+        echo $this->connection->executeCommand($command)->stdout();
+        echo $this->connection->executeCommand($command)->stderr();
+
     }
 
     public function verify()

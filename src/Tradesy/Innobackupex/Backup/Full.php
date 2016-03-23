@@ -25,7 +25,7 @@ class Full extends AbstractBackup
         $host = $this->getMysqlConfiguration()->getHost();
         $port = $this->getMysqlConfiguration()->getPort();
         $directory = $this->getActualDirectory();
-
+        $x = "\Tradesy\Innobackupex\Encryption\Configuration";
         $command =
             "innobackupex" .
             " --user=" . $user .
@@ -33,6 +33,9 @@ class Full extends AbstractBackup
             " --host=" . $host .
             " --port=" . $port .
             " --no-timestamp" .
+            ($this->getCompress() ? " --compress" : "") .
+            (($this->getEncryptionConfiguration() instanceof $x) ?
+                $this->getEncryptionConfiguration()->getConfigurationString() : "" ).
             " " . $directory ;
 
         echo "Backup Command: $command \n";
@@ -46,21 +49,14 @@ class Full extends AbstractBackup
     {
         echo "Backup info save to home directory\n";
 
-        $BackupInfo = new Info(
+        $this->BackupInfo = new Info(
             $this->getActualDirectory(),
             $this->getFullPathToBackup(),
             array()
         );
 
-        $this->writeFile("/tmp/tradesy_percona_backup_info", serialize($BackupInfo), 0644);
+        $this->writeFile("/tmp/tradesy_percona_backup_info", serialize($this->BackupInfo), 0644);
 
-        /*
-         * TODO: Move this to S3 save interface
-         */
-        $command = "s3cmd put /tmp/tradesy_percona_backup_info" . " " . $this->getS3Bucket() . "tradesy_percona_backup_info";
-        echo "Upload latest backup info to S3 with command: $command \n";
-        $commandOutput = exec($command);
-        echo $commandOutput;
     }
-    
+
 }

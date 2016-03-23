@@ -13,6 +13,7 @@ interface SaveInterface
 
     public function verify();
 
+    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $backupInfo);
 
 
 }

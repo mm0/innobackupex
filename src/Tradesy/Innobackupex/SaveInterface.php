@@ -14,6 +14,9 @@ interface SaveInterface
     public function verify();
 
     public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $backupInfo);
-
+    /**
+     * @param mixed $key
+     */
+    public function setKey($key);
 
 }

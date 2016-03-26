@@ -75,4 +75,11 @@ class Configuration
         return " --encrypt=" . $this->algorithm . 
                 " --encrypt-key=" . $this->encryption_key;
     }
+    /**
+     * @return string
+     */
+    public function getDecryptConfigurationString(){
+        return " --decrypt=" . $this->algorithm .
+        " --encrypt-key=" . $this->encryption_key;
+    }
 }

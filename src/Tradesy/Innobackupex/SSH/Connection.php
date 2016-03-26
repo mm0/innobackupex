@@ -85,6 +85,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     public function getFileContents($file)
     {
         $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
+        echo "temp" . $temp_file;
         ssh2_scp_recv($this->getConnection(), $file, $temp_file);
         $contents = file_get_contents($temp_file);
         unlink($temp_file);
@@ -160,6 +161,9 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      */
     public
     function file_exists($file){
-         return $this->executeCommand("if [ -f " . $file . " ] || [ -d " . $file . " ] ; then echo 'true'; fi ")->stdout() == "true";
+        $command = "if [ -f " . $file . " ] || [ -d " . $file . " ] ; then echo 'true'; fi ";
+      //  echo $command;
+     //   echo $this->executeCommand($command)->stdout();
+         return boolval($this->executeCommand($command)->stdout()) ;
     }
 }

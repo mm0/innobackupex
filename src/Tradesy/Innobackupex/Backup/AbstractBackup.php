@@ -8,15 +8,31 @@ use Tradesy\Innobackupex\ConnectionInterface;
 use Tradesy\Innobackupex\Exceptions\InnobackupexException;
 use Tradesy\Innobackupex\SaveInterface;
 
+/**
+ * Class AbstractBackup
+ * @package Tradesy\Innobackupex\Backup
+ */
 abstract class AbstractBackup
 {
-    protected $save_name;
-    protected $full_path_to_backup;
-    protected $full_path_to_backup_directory;
-    protected $save_directory;
-    protected $save_directory_prefix = "";
+    /**
+     * @var string
+     * @desc Directory name relative to $save_directory
+     */
+    protected $relative_backup_directory;
+    /**
+     * @var string
+     * The directory where any backup directories will live
+     */
+    protected $base_backup_directory;
+    /**
+     * @var string
+     * @desc Prefix for relative backup directory
+     */
+    protected $save_directory_prefix;
+    /**
+     * @var bool
+     */
     protected $compress;
-    protected $save_type;
     /**
      * @var Configuration
      */
@@ -33,15 +49,28 @@ abstract class AbstractBackup
      * @var EncryptionConfiguration
      */
     protected $encryption_configuration;
-    protected $date;
+    /**
+     * @var int timestamp
+     */
     protected $start_date;
+    /**
+     * @var int timestamp
+     */
     protected $end_date;
+    /**
+     * @var string
+     * @desc Max memory to use during backup ie. "1G" for 1 gigabyte
+     */
     protected $memory_limit;
-    protected $actual_directory;
+    /**
+     * @var string
+     * @desc Filename to store serialized backup information
+     */
     protected $backup_info_filename = "tradesy_percona_backup_info";
-    protected $backup_info_directory = "/tmp/";
+    /**
+     * @var \Tradesy\Innobackupex\Backup\Info
+     */
     protected $BackupInfo;
-
 
 
     /**
@@ -52,27 +81,27 @@ abstract class AbstractBackup
      * @param EncryptionConfiguration $enc_config
      * @param bool $compress
      * @param string $memory
-     * @param string $save_directory
+     * @param string $base_backup_directory
      * @param string $save_directory_prefix
      */
     public function __construct(
         Configuration $mysql_configuration,
         ConnectionInterface $connection,
         array $save_modules,
-        EncryptionConfiguration $enc_config        = null,
-        $compress                       = false,
-        $memory                         = "1G",
-        $save_directory                 = "tmp",
-        $save_directory_prefix          = "full_backup"
+        EncryptionConfiguration $enc_config = null,
+        $compress = false,
+        $memory = "1G",
+        $base_backup_directory = "/tmp",
+        $save_directory_prefix = "full_backup"
     ) {
-        $this->mysql_configuration      = $mysql_configuration;
-        $this->connection               = $connection;
-        $this->save_module              = $save_modules;
+        $this->mysql_configuration = $mysql_configuration;
+        $this->connection = $connection;
+        $this->save_module = $save_modules;
         $this->encryption_configuration = $enc_config;
-        $this->compress                 = $compress;
-        $this->memory                   = $memory;
-        $this->save_directory           = $save_directory;
-        $this->save_directory_prefix    = $save_directory_prefix;
+        $this->compress = $compress;
+        $this->memory = $memory;
+        $this->base_backup_directory = $base_backup_directory;
+        $this->save_directory_prefix = $save_directory_prefix;
 
     }
 
@@ -90,21 +119,6 @@ abstract class AbstractBackup
     public function setBackupInfoFilename($backup_info_filename)
     {
         $this->backup_info_filename = $backup_info_filename;
-    }
-    /**
-     * @return string
-     */
-    public function getBackupInfoDirectory()
-    {
-        return $this->backup_info_directory;
-    }
-
-    /**
-     * @param string $backup_info_filename
-     */
-    public function setBackupInfoDirectory($backup_info_directory)
-    {
-        $this->backup_info_directory = $backup_info_directory;
     }
 
 
@@ -124,62 +138,15 @@ abstract class AbstractBackup
         $this->save_directory_prefix = $save_directory_prefix;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getFullPathToBackupDirectory()
-    {
-        return $this->full_path_to_backup_directory;
-    }
-
-    /**
-     * @param mixed $full_path_to_backup_directory
-     */
-    public function setFullPathToBackupDirectory($full_path_to_backup_directory)
-    {
-        $this->full_path_to_backup_directory = $full_path_to_backup_directory;
-    }
 
     /**
      * @return mixed
      */
     public function getFullPathToBackup()
     {
-        return $this->full_path_to_backup;
+        return $this->getBasebackupDirectory() . DIRECTORY_SEPARATOR . $this->getRelativebackupdirectory();
     }
 
-    /**
-     * @param mixed $full_path_to_backup
-     */
-    public function setFullPathToBackup($full_path_to_backup)
-    {
-        $this->full_path_to_backup = $full_path_to_backup;
-    }
-
-
-    /**
-     * @return boolean
-     */
-    public function isRemoveArchiveAfterS3()
-    {
-        return $this->remove_archive_after_s3;
-    }
-
-    /**
-     * @param boolean $remove_archive_after_s3
-     */
-    public function setRemoveArchiveAfterS3($remove_archive_after_s3)
-    {
-        $this->remove_archive_after_s3 = $remove_archive_after_s3;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getActualDirectory()
-    {
-        return $this->actual_directory;
-    }
 
     /**
      * @return string
@@ -199,24 +166,24 @@ abstract class AbstractBackup
 
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getSaveName()
+    public function getRelativebackupdirectory()
     {
-        return $this->save_name;
+        return $this->relative_backup_directory;
     }
 
     /**
-     * @param mixed $save_name
+     * @param
      */
-    abstract function setSaveName();
+    abstract function setRelativebackupdirectory();
 
     /**
      * @return mixed
      */
-    public function getSaveDirectory()
+    public function getBasebackupDirectory()
     {
-        return $this->save_directory;
+        return $this->base_backup_directory;
     }
 
 
@@ -236,22 +203,6 @@ abstract class AbstractBackup
         $this->compress = $compress;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getSaveType()
-    {
-        return $this->save_type;
-    }
-
-    /**
-     * @param mixed $save_type
-     */
-    public function setSaveType($save_type)
-    {
-        $this->save_type = $save_type;
-    }
-
 
     /**
      * @return ConnectionInterface
@@ -260,6 +211,7 @@ abstract class AbstractBackup
     {
         return $this->connection;
     }
+
     /**
      * @return Configuration
      */
@@ -267,27 +219,13 @@ abstract class AbstractBackup
     {
         return $this->mysql_configuration;
     }
+
     /**
-     * @return Configuration
+     * @return EncryptionConfiguration
      */
     public function getEncryptionConfiguration()
     {
         return $this->encryption_configuration;
-    }
-    /**
-     * @return mixed
-     */
-    public function getDate()
-    {
-        return $this->date;
-    }
-
-    /**
-     * @param mixed $date
-     */
-    public function setDate($date)
-    {
-        $this->date = $date;
     }
 
     /**
@@ -325,12 +263,7 @@ abstract class AbstractBackup
     public function start()
     {
         $this->setStartDate(time());
-        $this->actual_directory =
-            $this->getSaveDirectory()
-            . "/" . $this->getSaveDirectoryPrefix()
-            . date("m-j-Y--H-i-s", $this->getStartDate());
-        $this->setSaveName();
-        $this->setS3Name();
+        $this->setRelativebackupdirectory();
         echo "\nStarting Backup: " . date("F j, Y, g:i a", $this->getStartDate()) . "\n";
     }
 
@@ -366,7 +299,7 @@ abstract class AbstractBackup
         $command = "sudo innobackupex --apply-log --use-memory=" .
             $this->getMemoryLimit() .
             " " .
-            $this->getSaveDirectory() .
+            $this->getBasebackupDirectory() .
             date("m-j-Y--H-i-s", $this->getStartDate());
 
         echo "Backup Command: $command \n";
@@ -379,19 +312,15 @@ abstract class AbstractBackup
     public function Backup()
     {
         $this->test_innobackupex_exist();
-        if ($this->getCompress()) {
-         //  $this->test_s3cmd();
-        }
         $this->start();
         $this->PerformBackup();
-        /**
-         * TODO: update $this->BackupInfo
-         */
+        $this->SaveBackupInfo();
         //  $this->ApplyLog();
-        echo "Saved to " . $this->actual_directory . "\n";
-        foreach($this->save_module as $saveModule){
+        echo "Saved to " . $this->getFullPathToBackup() . "\n";
+        foreach ($this->save_module as $saveModule) {
 
-            $saveModule->save($this->getSaveName());
+            $saveModule->setKey($this->getRelativebackupdirectory());
+            $saveModule->save($this->getFullPathToBackup());
             /*
              * optionally store backup info with save modules
              */
@@ -409,35 +338,23 @@ abstract class AbstractBackup
 
     public function fetchBackupInfo()
     {
-        $remote_file = $this->getBackupInfoDirectory() . $this->getBackupInfoFilename();
-
+        $remote_file = $this->getBasebackupDirectory() . DIRECTORY_SEPARATOR .
+            $this->getBackupInfoFilename();
         if ($this->getConnection()->file_exists($remote_file)) {
             $file_contents = $this->getConnection()->getFileContents($remote_file);
-            $this->BackupInfo = unserialize($file_contents, true);
-        }else{
+            echo $file_contents;
+            $this->BackupInfo = unserialize($file_contents);
+            var_dump($this->BackupInfo);
+        } else {
             $this->BackupInfo = new Info();
         }
         return $this->BackupInfo;
     }
 
-    private function RemoveArchivedFile()
+    protected function PostHook()
     {
-        if ($this->isRemoveArchiveAfterS3()) {
-            $command = "sudo rm -f " . $this->getFullPathToBackup();
-            $response = $this->connection->executeCommand(
-                $command
-            );
-        }
-    }
 
-    private function PostHook()
-    {
-        if ($this->isRemoveArchiveAfterS3()) {
-            # delete compressed backup
-            $this->RemoveArchivedFile();
-        }
     }
-    
 
     abstract function SaveBackupInfo();
 

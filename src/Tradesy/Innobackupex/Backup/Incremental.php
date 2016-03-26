@@ -5,91 +5,98 @@ use \Tradesy\Innobackupex\Backup\AbstractBackup;
 
 class Incremental extends AbstractBackup{
 
-    protected $base_dir;
-
-    /**
-     * @return mixed
-     */
-    public function getBaseDir()
+    protected $save_directory_prefix = "full_backup_";
+    
+    public function setRelativebackupdirectory()
     {
-        return $this->base_dir;
-    }
-
-    /**
-     * @param mixed $base_dir
-     */
-    public function setBaseDir($base_dir)
-    {
-        $this->base_dir = $base_dir;
-    }
-
-    public function setSaveName(){
-        $this->save_name = "incremental_backup_" . date("m-j-Y--H-i-s", $this->getStartDate());
-    }
-
-    public function __construct($connection){
-        parent::__construct($connection);
-    }
-    public function setS3Name(){
-        $this->s3_name = $this->BackupInfo['latest_full_backup_s3_directory'] . $this->getSaveName();
+        $this->relative_backup_directory = $this->getSaveDirectoryPrefix() .
+            date("m-j-Y--H-i-s", $this->getStartDate());
     }
 
 
     public function PerformBackup(){
-        $command = "sudo innobackupex --no-timestamp --incremental " . $this->getActualDirectory() . " --incremental-basedir=". $this->getBaseDir();
-        echo "Backup Command: $command \n";
-        $stream = ssh2_exec($this->SSH_Connection,$command );
-        $stderrStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
-        stream_set_blocking($stderrStream, true);
-        stream_set_blocking($stream, true);
-        $stdout = stream_get_contents($stream);
-        $stderr = stream_get_contents($stderrStream);
+        /*
+         * If there are incrementals, use the directory returned by array_pop,
+         * else use the base backup directory
+         */
+        $user               = $this->getMysqlConfiguration()->getUsername();
+        $password           = $this->getMysqlConfiguration()->getPassword();
+        $host               = $this->getMysqlConfiguration()->getHost();
+        $port               = $this->getMysqlConfiguration()->getPort();
+        $x                  = "\Tradesy\Innobackupex\Encryption\Configuration";
+        $decryption_string  = (($this->getEncryptionConfiguration() instanceof $x) ?
+                        $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "" );
+        $encryption_string  = (($this->getEncryptionConfiguration() instanceof $x) ?
+                        $this->getEncryptionConfiguration()->getConfigurationString() : "" );
+        $basedir            = (is_null($this->BackupInfo->getLatestIncrementalBackup()) ?
+                                    $this->BackupInfo->getLatestFullBackup() :
+                                    $this->BackupInfo->getLatestIncrementalBackup());
 
-        echo $stdout . "\n";
-        echo $stderr . "\n";
-        fclose($stream);
+        /*
+         * Next we have to check if files are encrpyted
+         */
+        $xtrabackup_file    = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_checkpoints";
+
+        /*
+         * If compressed and encrypted, decrypt first
+         */
+        if (! $this->getConnection()->file_exists($xtrabackup_file) &&
+            $this->getConnection()->file_exists($xtrabackup_file.".xbcrypt")
+        ) {
+            $command = "innobackupex " .
+                $decryption_string .
+                " $basedir --parallel 10";
+
+            $response = $this->getConnection()->executeCommand($command);
+
+            echo $response->stdout() . "\n";
+            echo $response->stderr() . "\n";
+        }
+        /*
+         * Now if compressed, decompress
+         * xtrabackup_checkpoints doesn't get compressed, so check with different file
+         * such as xtrabackup_info
+         */
+        $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_info";
+        if (! $this->getConnection()->file_exists($xtrabackup_file) &&
+            $this->getConnection()->file_exists($xtrabackup_file.".qp")
+        ) {
+            $command = "innobackupex " .
+                " --decompress" .
+                " --parallel 10" .
+                " $basedir";
+            $response = $this->getConnection()->executeCommand($command);
+
+            echo $response->stdout() . "\n";
+            echo $response->stderr() . "\n";
+        }
+        $command = "innobackupex " .
+            " --user=" . $user .
+            " --password=" . $password .
+            " --host=" . $host .
+            " --port=" . $port .
+            " --no-timestamp " .
+            ($this->getCompress() ? " --compress" : "") .
+            $encryption_string .
+            " --incremental " .
+            $this->getFullPathToBackup() . 
+            " --incremental-basedir=" . 
+            $basedir;
+        echo "Backup Command: $command \n";
+        $response = $this->getConnection()->executeCommand($command);
+
+        echo $response->stdout() . "\n";
+        echo $response->stderr() . "\n";
     }
+
 
     public function SaveBackupInfo()
     {
-        $path = $this->getActualDirectory();
-        // get old inc backup
-        $inc_base_dir = $this->BackupInfo['latest_incremental_backup'];
+        echo "Backup info save to home directory\n";
+        $this->BackupInfo->addIncrementalBackup(
+            $this->getFullPathToBackup()
+        );
+        $this->writeFile($this->getBasebackupDirectory() . DIRECTORY_SEPARATOR . $this->getBackupInfoFilename(), serialize($this->BackupInfo), 0644);
 
-        $this->BackupInfo['latest_incremental_backup'] = array( "s3_directory" => $this->BackupInfo['latest_full_backup_s3_directory'],
-                                                                "s3_bucket" => $this->getS3Bucket(),
-                                                                "s3_full_path" => $this->getS3Bucket() . $this->getS3Name() . ".tar.gz",
-                                                                "create_datetime" => date("m-j-Y--H-i-s", $this->getStartDate()),
-                                                                "local_path" => $this->getFullPathToBackup(),
-                                                                "actual_directory" => $path );
-        if(count($inc_base_dir)){
-            array_push($this->BackupInfo['incremental_backup_list'],$inc_base_dir);
-        }
-
-        file_put_contents('/tmp/tradesy_percona_backup_info',json_encode($this->BackupInfo));
-        $this->uploadFileToServer("/tmp/tradesy_percona_backup_info","/home/".$this->SSH_User ."/tradesy_percona_backup_info",0644);
-	$command = "sudo s3cmd put /tmp/tradesy_percona_backup_info" . " " . $this->getS3Bucket() . "tradesy_percona_backup_info";
-	echo "Upload latest backup info to S3 with command: $command \n";
-	$commandOutput = exec($command);
-	echo $commandOutput;
-
-        # Write to hourly backup file
-        $command = "sudo echo '". $path . "' > ~/latest_percona_mysql_hourly_backup";
-        $this->SSH_Command($command,true,false);
     }
-
-    public function setBaseDirInfo(){
-        $daily_base_dir = $this->BackupInfo['latest_full_backup'];
-        $inc_base_dir = $this->BackupInfo['latest_incremental_backup'];
-        if(count($inc_base_dir)){
-            $this->setBaseDir($inc_base_dir['actual_directory']);
-        }else {
-            if(strlen($daily_base_dir)>5){
-                $this->setBaseDir($daily_base_dir);
-            }else{
-                die("Error! Base Directory not found for incremental Backup");
-            }
-        }
-    }
-
 }

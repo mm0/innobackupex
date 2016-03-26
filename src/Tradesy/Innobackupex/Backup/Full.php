@@ -8,14 +8,12 @@ use \Tradesy\Innobackupex\Backup\Info;
 class Full extends AbstractBackup
 {
 
-    public function setSaveName()
+    protected $save_directory_prefix = "full_backup_";
+    
+    public function setRelativebackupdirectory()
     {
-        $this->save_name = "full_backup_" . date("m-j-Y--H-i-s", $this->getStartDate());
-    }
-
-    public function setS3Name()
-    {
-        $this->s3_name = date("m-j-Y--H-i-s", $this->getStartDate()) . "/" . $this->getSaveName();
+        $this->relative_backup_directory = $this->getSaveDirectoryPrefix() . 
+                date("m-j-Y--H-i-s", $this->getStartDate());
     }
 
     public function PerformBackup()
@@ -24,8 +22,9 @@ class Full extends AbstractBackup
         $password  = $this->getMysqlConfiguration()->getPassword();
         $host = $this->getMysqlConfiguration()->getHost();
         $port = $this->getMysqlConfiguration()->getPort();
-        $directory = $this->getActualDirectory();
+        $directory = $this->getFullPathToBackup();
         $x = "\Tradesy\Innobackupex\Encryption\Configuration";
+        
         $command =
             "innobackupex" .
             " --user=" . $user .
@@ -48,14 +47,11 @@ class Full extends AbstractBackup
     public function SaveBackupInfo()
     {
         echo "Backup info save to home directory\n";
-
-        $this->BackupInfo = new Info(
-            $this->getActualDirectory(),
-            $this->getFullPathToBackup(),
-            array()
-        );
-
-        $this->writeFile("/tmp/tradesy_percona_backup_info", serialize($this->BackupInfo), 0644);
+        $this->BackupInfo->setBaseBackupDirectory($this->getBasebackupDirectory());
+        $this->BackupInfo->setLatestFullBackup($this->getFullPathToBackup());
+        $this->BackupInfo->setIncrementalBackups(array());
+        $this->BackupInfo->setRepositoryBaseName(date("m-j-Y--H-i-s", $this->getStartDate()));
+        $this->writeFile($this->getBasebackupDirectory() . DIRECTORY_SEPARATOR . $this->getBackupInfoFilename(), serialize($this->BackupInfo), 0644);
 
     }
 

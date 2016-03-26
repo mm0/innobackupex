@@ -4,7 +4,9 @@ namespace Tradesy\Innobackupex\S3\Remote;
 
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\SaveInterface;
-use Tradesy\Innobackupex\ConnectionInterface;
+use \Tradesy\Innobackupex\ConnectionInterface;
+use \Tradesy\Innobackupex\Exceptions\AWSCLINotFoundException;
+use \Tradesy\Innobackupex\Exceptions\S3BucketNotFoundException;
 
 class Upload implements SaveInterface {
 
@@ -15,6 +17,7 @@ class Upload implements SaveInterface {
     protected $key;
     protected $remove_file_after_upload;
     protected $concurrency;
+    protected $binary = "aws";
 
     /**
      * Upload constructor.
@@ -39,21 +42,45 @@ class Upload implements SaveInterface {
         $this->region                   = $region;
         $this->remove_file_after_upload = $remove_file_after_upload;
         $this->concurrency              = $concurrency;
+        $this->testSave();
     }
     public function testSave()
     {
-        // Check which aws tool exists to interface with Simple Storage Service
-        // Check whether SSH tool exists
+        $command = "which " . $this->binary;
+        $response = $this->connection->executeCommand($command);
+        if(strlen($response->stdout()) == 0 || preg_match("/not found/i", $response->stdout())){
+            throw new AWSCLINotFoundException(
+                "AWS CLI not installed.",
+                0
+            );
+        }
+        /*
+         * TODO: Check that credentials work
+         */
+        $command = $this->binary .
+                    " --region " . $this->region .
+                    " s3 ls | grep -c " . $this->bucket;
+        //echo $command;
+        $response = $this->connection->executeCommand($command);
+        if(intval($response->stdout())==0){
+            throw new S3BucketNotFoundException(
+                "S3 bucket (" . $this->bucket . ")  not found in region (" . $this->region .")",
+                0
+            );
+        }
 
     }
 
     public function save($filename)
     {
         # upload compressed file to s3
-        $command = "sudo s3cmd put $filename s3://" . $this->bucket . "/" . $this->key;
-        return $this->connection->executeCommand(
+        $command = $this->binary ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
+        echo $command;
+        $response = $this->connection->executeCommand(
             $command
         );
+        echo $response->stdout();
+        echo $response->stderr();
 
     }
     public function cleanup()
@@ -68,10 +95,13 @@ class Upload implements SaveInterface {
     public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info){
         $serialized = serialize($info);
 
-        $command = "echo '$serialized' | s3cmd put - s3://" . $this->bucket . "/tradesy_percona_backup_info";
+        $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
+        $command = $this->binary . " s3 cp /tmp/temporary_backup_info s3://" . $this->bucket . "/tradesy_percona_backup_info";
         echo "Upload latest backup info to S3 with command: $command \n";
-        echo $this->connection->executeCommand($command)->stdout();
-        echo $this->connection->executeCommand($command)->stderr();
+
+        $response = $this->connection->executeCommand($command);
+        echo $response->stdout();
+        echo $response->stderr();
 
     }
 
@@ -79,5 +109,11 @@ class Upload implements SaveInterface {
     {
 
     }
-
+    /**
+     * @param mixed $key
+     */
+    public function setKey($key)
+    {
+        $this->key = $key;
+    }
 }

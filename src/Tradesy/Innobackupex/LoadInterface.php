@@ -2,10 +2,10 @@
 
 namespace Tradesy\Innobackupex;
 
-interface SaveInterface
+interface LoadInterface
 {
 
-    public function save($filename);
+    public function load(\Tradesy\Innobackupex\Backup\Info $backupInfo);
 
     public function testSave();
 
@@ -13,7 +13,7 @@ interface SaveInterface
 
     public function verify();
 
-    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $backupInfo, $filename);
+    public function getBackupInfo();
     /**
      * @param mixed $key
      */

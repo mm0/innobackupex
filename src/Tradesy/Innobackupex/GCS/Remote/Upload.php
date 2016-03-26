@@ -1,6 +1,6 @@
 <?php
 
-namespace Tradesy\Innobackupex\S3\Remote;
+namespace Tradesy\Innobackupex\GCS\Remote;
 
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\SaveInterface;
@@ -17,7 +17,7 @@ class Upload implements SaveInterface {
     protected $key;
     protected $remove_file_after_upload;
     protected $concurrency;
-    protected $binary = "aws";
+    protected $binary = "gsutil";
 
     /**
      * Upload constructor.
@@ -38,7 +38,6 @@ class Upload implements SaveInterface {
         $this->connection               = $connection;
         $this->bucket                   = $bucket;
         $this->region                   = $region;
-        $this->remove_file_after_upload = $remove_file_after_upload;
         $this->concurrency              = $concurrency;
         $this->testSave();
     }
@@ -56,13 +55,12 @@ class Upload implements SaveInterface {
          * TODO: Check that credentials work
          */
         $command = $this->binary .
-                    " --region " . $this->region .
-                    " s3 ls | grep -c " . $this->bucket;
+                    " ls | grep -c " . $this->bucket;
         echo $command;
         $response = $this->connection->executeCommand($command);
         if(intval($response->stdout())==0){
             throw new BucketNotFoundException(
-                "S3 bucket (" . $this->bucket . ")  not found in region (" . $this->region .")",
+                "GCS bucket (" . $this->bucket . ")  not found. ",
                 0
             );
         }
@@ -71,12 +69,8 @@ class Upload implements SaveInterface {
 
     public function save($filename)
     {
-        # upload compressed file to s3
-        $command = $this->binary .
-            " s3 sync $filename s3://" . 
-            $this->bucket . 
-            "/" . 
-            $this->key;
+        // -m option for parallel
+        $command = $this->binary ." -m rsync  $filename gs://" . $this->bucket . "/" . $this->key;
         echo $command;
         $response = $this->connection->executeCommand(
             $command
@@ -98,7 +92,7 @@ class Upload implements SaveInterface {
         $serialized = serialize($info);
 
         $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
-        $command = $this->binary . " s3 cp /tmp/temporary_backup_info s3://" . $this->bucket . "/" . $filename;
+        $command = $this->binary . " cp /tmp/temporary_backup_info gs://" . $this->bucket . "/tradesy_percona_backup_info";
         echo "Upload latest backup info to S3 with command: $command \n";
 
         $response = $this->connection->executeCommand($command);

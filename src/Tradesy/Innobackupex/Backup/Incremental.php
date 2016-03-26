@@ -1,12 +1,14 @@
 <?php
 
 namespace Tradesy\Innobackupex\Backup;
+
 use \Tradesy\Innobackupex\Backup\AbstractBackup;
 
-class Incremental extends AbstractBackup{
+class Incremental extends AbstractBackup
+{
 
     protected $save_directory_prefix = "full_backup_";
-    
+
     public function setRelativebackupdirectory()
     {
         $this->relative_backup_directory = $this->getSaveDirectoryPrefix() .
@@ -14,34 +16,35 @@ class Incremental extends AbstractBackup{
     }
 
 
-    public function PerformBackup(){
+    public function PerformBackup()
+    {
         /*
          * If there are incrementals, use the directory returned by array_pop,
          * else use the base backup directory
          */
-        $user               = $this->getMysqlConfiguration()->getUsername();
-        $password           = $this->getMysqlConfiguration()->getPassword();
-        $host               = $this->getMysqlConfiguration()->getHost();
-        $port               = $this->getMysqlConfiguration()->getPort();
-        $x                  = "\Tradesy\Innobackupex\Encryption\Configuration";
-        $decryption_string  = (($this->getEncryptionConfiguration() instanceof $x) ?
-                        $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "" );
-        $encryption_string  = (($this->getEncryptionConfiguration() instanceof $x) ?
-                        $this->getEncryptionConfiguration()->getConfigurationString() : "" );
-        $basedir            = (is_null($this->BackupInfo->getLatestIncrementalBackup()) ?
-                                    $this->BackupInfo->getLatestFullBackup() :
-                                    $this->BackupInfo->getLatestIncrementalBackup());
+        $user = $this->getMysqlConfiguration()->getUsername();
+        $password = $this->getMysqlConfiguration()->getPassword();
+        $host = $this->getMysqlConfiguration()->getHost();
+        $port = $this->getMysqlConfiguration()->getPort();
+        $x = "\Tradesy\Innobackupex\Encryption\Configuration";
+        $decryption_string = (($this->getEncryptionConfiguration() instanceof $x) ?
+            $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "");
+        $encryption_string = (($this->getEncryptionConfiguration() instanceof $x) ?
+            $this->getEncryptionConfiguration()->getConfigurationString() : "");
+        $basedir = (is_null($this->BackupInfo->getLatestIncrementalBackup()) ?
+            $this->BackupInfo->getLatestFullBackup() :
+            $this->BackupInfo->getLatestIncrementalBackup());
 
         /*
          * Next we have to check if files are encrpyted
          */
-        $xtrabackup_file    = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_checkpoints";
+        $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_checkpoints";
 
         /*
          * If compressed and encrypted, decrypt first
          */
-        if (! $this->getConnection()->file_exists($xtrabackup_file) &&
-            $this->getConnection()->file_exists($xtrabackup_file.".xbcrypt")
+        if (!$this->getConnection()->file_exists($xtrabackup_file) &&
+            $this->getConnection()->file_exists($xtrabackup_file . ".xbcrypt")
         ) {
             $command = "innobackupex " .
                 $decryption_string .
@@ -58,8 +61,8 @@ class Incremental extends AbstractBackup{
          * such as xtrabackup_info
          */
         $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_info";
-        if (! $this->getConnection()->file_exists($xtrabackup_file) &&
-            $this->getConnection()->file_exists($xtrabackup_file.".qp")
+        if (!$this->getConnection()->file_exists($xtrabackup_file) &&
+            $this->getConnection()->file_exists($xtrabackup_file . ".qp")
         ) {
             $command = "innobackupex " .
                 " --decompress" .
@@ -79,8 +82,8 @@ class Incremental extends AbstractBackup{
             ($this->getCompress() ? " --compress" : "") .
             $encryption_string .
             " --incremental " .
-            $this->getFullPathToBackup() . 
-            " --incremental-basedir=" . 
+            $this->getFullPathToBackup() .
+            " --incremental-basedir=" .
             $basedir;
         echo "Backup Command: $command \n";
         $response = $this->getConnection()->executeCommand($command);
@@ -96,7 +99,11 @@ class Incremental extends AbstractBackup{
         $this->BackupInfo->addIncrementalBackup(
             $this->getFullPathToBackup()
         );
-        $this->writeFile($this->getBasebackupDirectory() . DIRECTORY_SEPARATOR . $this->getBackupInfoFilename(), serialize($this->BackupInfo), 0644);
+        $this->writeFile(
+            $this->getBasebackupDirectory() . DIRECTORY_SEPARATOR . 
+            $this->getBackupInfoFilename(),
+            serialize($this->BackupInfo), 0644
+        );
 
     }
 }

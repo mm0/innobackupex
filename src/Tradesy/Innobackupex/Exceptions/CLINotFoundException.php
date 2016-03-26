@@ -3,7 +3,7 @@
 namespace Tradesy\Innobackupex\Exceptions;
 
 
-class AWSCLINotFoundException extends \Exception
+class CLINotFoundException extends \Exception
 {
     public function __construct($message, $code = 0, \Exception $previous = null) {
 

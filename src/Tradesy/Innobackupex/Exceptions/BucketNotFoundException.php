@@ -3,7 +3,7 @@
 namespace Tradesy\Innobackupex\Exceptions;
 
 
-class S3BucketNotFoundException extends \Exception
+class BucketNotFoundException extends \Exception
 {
     public function __construct($message, $code = 0, \Exception $previous = null) {
 

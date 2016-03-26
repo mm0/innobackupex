@@ -1,10 +1,7 @@
 <?php
 
-namespace Tradesy\Innobackupex\S3\Local;
+namespace Tradesy\Innobackupex\GCS\Local;
 
-use \Aws\S3\S3Client;
-use \Aws\S3\MultipartUploader;
-use \Aws\Exception\MultipartUploadException;
 
 class Upload implements \Tradesy\Innobackupex\SaveInterface
 {
@@ -15,8 +12,9 @@ class Upload implements \Tradesy\Innobackupex\SaveInterface
     protected $source;
     protected $key;
     protected $concurrency;
+    protected $binary = "gcloud";
 
-    public function __construct(S3Client $client, $concurrency = 10)
+    public function __construct(GCSClient $client, $concurrency = 10)
     {
         $this->client = $client;
         $this->concurrency = $concurrency;

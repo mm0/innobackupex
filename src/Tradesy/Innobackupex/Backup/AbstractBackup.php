@@ -44,7 +44,7 @@ abstract class AbstractBackup
     /**
      * @var \Tradesy\Innobackupex\SaveInterface[]
      */
-    protected $save_module;
+    protected $save_modules;
     /**
      * @var EncryptionConfiguration
      */
@@ -61,7 +61,7 @@ abstract class AbstractBackup
      * @var string
      * @desc Max memory to use during backup ie. "1G" for 1 gigabyte
      */
-    protected $memory_limit;
+    protected $memory_limit = "1G";
     /**
      * @var string
      * @desc Filename to store serialized backup information
@@ -96,7 +96,7 @@ abstract class AbstractBackup
     ) {
         $this->mysql_configuration = $mysql_configuration;
         $this->connection = $connection;
-        $this->save_module = $save_modules;
+        $this->save_modules = $save_modules;
         $this->encryption_configuration = $enc_config;
         $this->compress = $compress;
         $this->memory = $memory;
@@ -317,14 +317,18 @@ abstract class AbstractBackup
         $this->SaveBackupInfo();
         //  $this->ApplyLog();
         echo "Saved to " . $this->getFullPathToBackup() . "\n";
-        foreach ($this->save_module as $saveModule) {
+        foreach ($this->save_modules as $saveModule) {
 
-            $saveModule->setKey($this->getRelativebackupdirectory());
+            $saveModule->setKey(
+                $this->BackupInfo->getRepositoryBaseName() .
+                DIRECTORY_SEPARATOR .
+                $this->getRelativebackupdirectory()
+            );
             $saveModule->save($this->getFullPathToBackup());
             /*
              * optionally store backup info with save modules
              */
-            $saveModule->saveBackupInfo($this->BackupInfo);
+            $saveModule->saveBackupInfo($this->BackupInfo, $this->getBackupInfoFilename());
             $saveModule->cleanup();
         }
         $this->PostHook();
@@ -348,6 +352,7 @@ abstract class AbstractBackup
         } else {
             $this->BackupInfo = new Info();
         }
+
         return $this->BackupInfo;
     }
 

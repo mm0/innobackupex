@@ -7,17 +7,50 @@
  *
  *
  */
+namespace Tradesy\Innobackupex\Restore;
+use Tradesy\Innobackupex\MySQL\Configuration;
+use Tradesy\Innobackupex\Encryption\Configuration as EncryptionConfiguration;
+use Tradesy\Innobackupex\ConnectionInterface;
+use Tradesy\Innobackupex\Exceptions\InnobackupexException;
 
-class Mysql_Restore_Backups
+/**
+ * Class AbstractBackup
+ * @package Tradesy\Innobackupex\Backup
+ */
+class Mysql
 {
-
-    protected $incremental_backups = array();
-    protected $full_backup;
-    protected $memory_limit = "1G";
-
     /**
-     * @return mixed
+     * @var Configuration
      */
+    protected $mysql_configuration;
+    /**
+     * @var ConnectionInterface
+     */
+    protected $connection;
+    /**
+     * @var bool
+     */
+    protected $compressed;
+    protected $full_backup;
+    /**
+     * @var string
+     * @desc Max memory to use during backup ie. "1G" for 1 gigabyte
+     */
+    protected $memory_limit = "1G";
+    /**
+     * @var EncryptionConfiguration
+     */
+    protected $encryption_configuration;
+    /**
+     * @var int timestamp
+     */
+    protected $start_date;
+    /**
+     * @var int timestamp
+     */
+    protected $end_date;
+    
+    
     public function getMemoryLimit()
     {
         return $this->memory_limit;
@@ -30,22 +63,7 @@ class Mysql_Restore_Backups
     {
         $this->memory_limit = $memory_limit;
     }
-
-    /**
-     * @return array
-     */
-    public function getIncrementalBackups()
-    {
-        return $this->incremental_backups;
-    }
-
-    /**
-     * @param array $incremental_backups
-     */
-    public function setIncrementalBackups($incremental_backups)
-    {
-        $this->incremental_backups = $incremental_backups;
-    }
+    
 
     /**
      * @return mixed
@@ -64,11 +82,34 @@ class Mysql_Restore_Backups
     }
 
 
-    public function __construct($full_backup, $incremental_backups)
-    {
-        $this->setIncrementalBackups($incremental_backups);
-        $this->setFullBackup($full_backup);
-
+    /**
+     * Restore constructor.
+     * @param Configuration $mysql_configuration
+     * @param ConnectionInterface $connection
+     * @param LoadInterfaces[] $load_modules
+     * @param EncryptionConfiguration $enc_config
+     * @param bool $compressed
+     * @param string $memory
+     * @param string $base_backup_directory
+     * @param string $save_directory_prefix
+     */
+    public function __construct(
+        Configuration $mysql_configuration,
+        ConnectionInterface $connection,
+        array $load_moduless,
+        EncryptionConfiguration $enc_config = null,
+        $compressed = false,
+        $memory = "1G",
+        $base_backup_directory = "/tmp",
+        $save_directory_prefix = "full_backup"
+    ){
+        $this->mysql_configuration = $mysql_configuration;
+        $this->connection = $connection;
+        $this->load_modules = $load_moduless;
+        $this->encryption_configuration = $enc_config;
+        $this->encryption_configuration = $enc_config;
+        $this->compressed = $compressed;
+        $this->memory = $memory;
     }
 
     public function runRestore()

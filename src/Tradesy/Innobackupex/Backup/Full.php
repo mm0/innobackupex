@@ -23,7 +23,7 @@ class Full extends AbstractBackup
         $host = $this->getMysqlConfiguration()->getHost();
         $port = $this->getMysqlConfiguration()->getPort();
         $directory = $this->getFullPathToBackup();
-        $x = "\Tradesy\Innobackupex\Encryption\Configuration";
+        $enc_class = "\Tradesy\Innobackupex\Encryption\Configuration";
         
         $command =
             "innobackupex" .
@@ -33,7 +33,7 @@ class Full extends AbstractBackup
             " --port=" . $port .
             " --no-timestamp" .
             ($this->getCompress() ? " --compress" : "") .
-            (($this->getEncryptionConfiguration() instanceof $x) ?
+            (($this->getEncryptionConfiguration() instanceof $enc_class) ?
                 $this->getEncryptionConfiguration()->getConfigurationString() : "" ).
             " " . $directory ;
 
@@ -47,10 +47,13 @@ class Full extends AbstractBackup
     public function SaveBackupInfo()
     {
         echo "Backup info save to home directory\n";
+        $enc_class = "\Tradesy\Innobackupex\Encryption\Configuration";
         $this->BackupInfo->setBaseBackupDirectory($this->getBasebackupDirectory());
-        $this->BackupInfo->setLatestFullBackup($this->getFullPathToBackup());
+        $this->BackupInfo->setLatestFullBackup($this->getRelativebackupdirectory());
         $this->BackupInfo->setIncrementalBackups(array());
         $this->BackupInfo->setRepositoryBaseName(date("m-j-Y--H-i-s", $this->getStartDate()));
+        $this->BackupInfo->setEncrypted(($this->getEncryptionConfiguration() instanceof $enc_class)? true : false );
+        $this->BackupInfo->setCompression($this->getCompress());
         $this->writeFile($this->getBasebackupDirectory() . DIRECTORY_SEPARATOR . $this->getBackupInfoFilename(), serialize($this->BackupInfo), 0644);
 
     }

@@ -4,6 +4,7 @@ namespace Tradesy\Innobackupex\GCS\Remote;
 
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\ConnectionInterface;
+use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
 
@@ -14,7 +15,6 @@ class Download implements LoadInterface {
     protected $region;
     protected $source;
     protected $key;
-    protected $remove_file_after_upload;
     protected $concurrency;
     protected $binary = "gsutil";
 
@@ -31,13 +31,11 @@ class Download implements LoadInterface {
         ConnectionInterface $connection,
         $bucket,
         $region,
-        $remove_file_after_upload = false,
         $concurrency = 10
     ){
         $this->connection               = $connection;
         $this->bucket                   = $bucket;
         $this->region                   = $region;
-        $this->remove_file_after_upload = $remove_file_after_upload;
         $this->concurrency              = $concurrency;
         $this->testSave();
     }
@@ -47,7 +45,7 @@ class Download implements LoadInterface {
         $response = $this->connection->executeCommand($command);
         if(strlen($response->stdout()) == 0 || preg_match("/not found/i", $response->stdout())){
             throw new CLINotFoundException(
-                "AWS CLI not installed.",
+                $this->binary ." CLI not installed.",
                 0
             );
         }

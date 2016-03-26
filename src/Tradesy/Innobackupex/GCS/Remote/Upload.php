@@ -21,10 +21,10 @@ class Upload implements SaveInterface {
 
     /**
      * Upload constructor.
-     * @param $connection
-     * @param $bucket
-     * @param $key
-     * @param $region
+     * @param ConnectionInterface $connection
+     * @param string $bucket
+     * @param string $key
+     * @param string $region
      * @param bool $remove_file_after_upload
      * @param int $concurrency
      */
@@ -45,7 +45,8 @@ class Upload implements SaveInterface {
     {
         $command = "which " . $this->binary;
         $response = $this->connection->executeCommand($command);
-        if(strlen($response->stdout()) == 0 || preg_match("/not found/i", $response->stdout())){
+        if(strlen($response->stdout()) == 0 
+            || preg_match("/not found/i", $response->stdout())){
             throw new CLINotFoundException(
                 $this->binary . " CLI not installed.",
                 0
@@ -70,7 +71,10 @@ class Upload implements SaveInterface {
     public function save($filename)
     {
         // -m option for parallel
-        $command = $this->binary ." -m rsync  $filename gs://" . $this->bucket . "/" . $this->key;
+        $command = $this->binary .
+            " -m rsync  $filename gs://" . 
+            $this->bucket . "/" . 
+            $this->key;
         echo $command;
         $response = $this->connection->executeCommand(
             $command
@@ -93,7 +97,7 @@ class Upload implements SaveInterface {
 
         $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
         $command = $this->binary . " cp /tmp/temporary_backup_info gs://" . $this->bucket . "/tradesy_percona_backup_info";
-        echo "Upload latest backup info to S3 with command: $command \n";
+        echo "Upload latest backup info to GCS with command: $command \n";
 
         $response = $this->connection->executeCommand($command);
         echo $response->stdout();

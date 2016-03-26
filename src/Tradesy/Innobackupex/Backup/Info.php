@@ -12,6 +12,15 @@ class Info {
     protected $incremental_backups = array();
     protected $latest_full_backup;
     protected $repository_base_name;
+    /**
+     * @var bool
+     */
+    protected $encrypted;
+
+    /**
+     * @var mixed
+     */
+    protected $compression;
 
     public function __construct(
         $backup_directory = null,
@@ -99,5 +108,35 @@ class Info {
     
     public function addIncrementalBackup($Backup){
         $this->incremental_backups[] = $Backup;
+    }
+    /**
+     * @return mixed
+     */
+    public function getCompression()
+    {
+        return $this->compression;
+    }
+
+    /**
+     * @param mixed $compression
+     */
+    public function setCompression($compression)
+    {
+        $this->compression = $compression;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getEncrypted()
+    {
+        return $this->encrypted;
+    }
+    /**
+     * @param bool $encrypted
+     */
+    public function setEncrypted($encrypted)
+    {
+        $this->encrypted = $encrypted;
     }
 }

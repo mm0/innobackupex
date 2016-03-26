@@ -2,8 +2,6 @@
 
 namespace Tradesy\Innobackupex\Backup;
 
-use \Tradesy\Innobackupex\Backup\AbstractBackup;
-
 class Incremental extends AbstractBackup
 {
 
@@ -15,7 +13,57 @@ class Incremental extends AbstractBackup
             date("m-j-Y--H-i-s", $this->getStartDate());
     }
 
+    /*
+     * TODO: move this into a trait to be used my Restore\Mysql
+     */
+    protected function decryptAndDecompressBackups($backups){
+        $class = "\Tradesy\Innobackupex\Encryption\Configuration";
 
+        $decryption_string = (($this->getEncryptionConfiguration() instanceof $class) ?
+            $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "");
+
+        foreach($backups as $basedir) {
+            /*
+             * Next we have to check if files are encrpyted
+             */
+            $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_checkpoints";
+
+            /*
+             * If compressed and encrypted, decrypt first
+             */
+            if (!$this->getConnection()->file_exists($xtrabackup_file) &&
+                $this->getConnection()->file_exists($xtrabackup_file . ".xbcrypt")
+            ) {
+                $command = "innobackupex " .
+                    $decryption_string .
+                    " $basedir --parallel 10";
+
+                $response = $this->getConnection()->executeCommand($command);
+
+                echo $response->stdout() . "\n";
+                echo $response->stderr() . "\n";
+            }
+            /*
+             * Now if compressed, decompress
+             * xtrabackup_checkpoints doesn't get compressed, so check with different file
+             * such as xtrabackup_info
+             */
+            $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_info";
+            if (!$this->getConnection()->file_exists($xtrabackup_file) &&
+                $this->getConnection()->file_exists($xtrabackup_file . ".qp")
+            ) {
+                $command = "innobackupex " .
+                    " --decompress" .
+                    " --parallel 10" .
+                    " $basedir";
+                $response = $this->getConnection()->executeCommand($command);
+
+                echo $response->stdout() . "\n";
+                echo $response->stderr() . "\n";
+            }
+
+        }
+    }
     public function PerformBackup()
     {
         /*
@@ -27,52 +75,18 @@ class Incremental extends AbstractBackup
         $host = $this->getMysqlConfiguration()->getHost();
         $port = $this->getMysqlConfiguration()->getPort();
         $x = "\Tradesy\Innobackupex\Encryption\Configuration";
-        $decryption_string = (($this->getEncryptionConfiguration() instanceof $x) ?
-            $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "");
+
+
         $encryption_string = (($this->getEncryptionConfiguration() instanceof $x) ?
             $this->getEncryptionConfiguration()->getConfigurationString() : "");
-        $basedir = (is_null($this->BackupInfo->getLatestIncrementalBackup()) ?
-            $this->BackupInfo->getLatestFullBackup() :
-            $this->BackupInfo->getLatestIncrementalBackup());
 
-        /*
-         * Next we have to check if files are encrpyted
-         */
-        $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_checkpoints";
+        $basedir = $this->BackupInfo->getBaseBackupDirectory() . DIRECTORY_SEPARATOR .
+            (is_null($this->BackupInfo->getLatestIncrementalBackup()) ?
+                $this->BackupInfo->getLatestFullBackup() :
+                $this->BackupInfo->getLatestIncrementalBackup());
 
-        /*
-         * If compressed and encrypted, decrypt first
-         */
-        if (!$this->getConnection()->file_exists($xtrabackup_file) &&
-            $this->getConnection()->file_exists($xtrabackup_file . ".xbcrypt")
-        ) {
-            $command = "innobackupex " .
-                $decryption_string .
-                " $basedir --parallel 10";
+        $this->decryptAndDecompressBackups([$basedir]);
 
-            $response = $this->getConnection()->executeCommand($command);
-
-            echo $response->stdout() . "\n";
-            echo $response->stderr() . "\n";
-        }
-        /*
-         * Now if compressed, decompress
-         * xtrabackup_checkpoints doesn't get compressed, so check with different file
-         * such as xtrabackup_info
-         */
-        $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_info";
-        if (!$this->getConnection()->file_exists($xtrabackup_file) &&
-            $this->getConnection()->file_exists($xtrabackup_file . ".qp")
-        ) {
-            $command = "innobackupex " .
-                " --decompress" .
-                " --parallel 10" .
-                " $basedir";
-            $response = $this->getConnection()->executeCommand($command);
-
-            echo $response->stdout() . "\n";
-            echo $response->stderr() . "\n";
-        }
         $command = "innobackupex " .
             " --user=" . $user .
             " --password=" . $password .
@@ -97,7 +111,7 @@ class Incremental extends AbstractBackup
     {
         echo "Backup info save to home directory\n";
         $this->BackupInfo->addIncrementalBackup(
-            $this->getFullPathToBackup()
+            $this->getRelativebackupdirectory()
         );
         $this->writeFile(
             $this->getBasebackupDirectory() . DIRECTORY_SEPARATOR . 

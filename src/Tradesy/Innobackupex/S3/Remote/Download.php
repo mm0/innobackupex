@@ -3,7 +3,7 @@
 namespace Tradesy\Innobackupex\S3\Remote;
 
 use \Tradesy\Innobackupex\SSH\Connection;
-use \Tradesy\Innobackupex\SaveInterface;
+use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
 use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
@@ -46,9 +46,10 @@ class Download implements LoadInterface {
     {
         $command = "which " . $this->binary;
         $response = $this->connection->executeCommand($command);
-        if(strlen($response->stdout()) == 0 || preg_match("/not found/i", $response->stdout())){
-            throw new AWSCLINotFoundException(
-                "AWS CLI not installed.",
+        if(strlen($response->stdout()) == 0 
+            || preg_match("/not found/i", $response->stdout())){
+            throw new CLINotFoundException(
+                $this->binary ." CLI not installed.",
                 0
             );
         }
@@ -62,17 +63,19 @@ class Download implements LoadInterface {
         $response = $this->connection->executeCommand($command);
         if(intval($response->stdout())==0){
             throw new BucketNotFoundException(
-                "S3 bucket (" . $this->bucket . ")  not found in region (" . $this->region .")",
+                "S3 bucket (" . $this->bucket . ")  not found in region (" . 
+                $this->region .")",
                 0
             );
         }
 
     }
 
-    public function save($filename)
+    public function load($filename)
     {
         # upload compressed file to s3
-        $command = $this->binary ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
+        $command = $this->binary 
+            ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
         echo $command;
         $response = $this->connection->executeCommand(
             $command
@@ -90,12 +93,7 @@ class Download implements LoadInterface {
         */
     }
 
-    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info){
-        $serialized = serialize($info);
-
-        $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
-        $command = $this->binary . " s3 cp /tmp/temporary_backup_info s3://" . $this->bucket . "/tradesy_percona_backup_info";
-        echo "Upload latest backup info to S3 with command: $command \n";
+    public function getBackupInfo($backup_info_filename){
 
         $response = $this->connection->executeCommand($command);
         echo $response->stdout();

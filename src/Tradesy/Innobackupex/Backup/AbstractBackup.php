@@ -293,20 +293,7 @@ abstract class AbstractBackup
             echo 'Innobackupex located: ' . $response->stdout() . "\n";
         }
     }
-
-    public function ApplyLog()
-    {
-        $command = "sudo innobackupex --apply-log --use-memory=" .
-            $this->getMemoryLimit() .
-            " " .
-            $this->getBasebackupDirectory() .
-            date("m-j-Y--H-i-s", $this->getStartDate());
-
-        echo "Backup Command: $command \n";
-        $response = $this->connection->executeCommand(
-            $command
-        );
-    }
+    
 
 
     public function Backup()

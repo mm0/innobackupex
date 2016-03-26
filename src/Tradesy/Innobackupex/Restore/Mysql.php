@@ -23,6 +23,22 @@ class Mysql
      * @var Configuration
      */
     protected $mysql_configuration;
+
+    /**
+     * @return Configuration
+     */
+    public function getMysqlConfiguration()
+    {
+        return $this->mysql_configuration;
+    }
+
+    /**
+     * @param Configuration $mysql_configuration
+     */
+    public function setMysqlConfiguration($mysql_configuration)
+    {
+        $this->mysql_configuration = $mysql_configuration;
+    }
     /**
      * @var ConnectionInterface
      */
@@ -31,7 +47,10 @@ class Mysql
      * @var bool
      */
     protected $compressed;
-    protected $full_backup;
+    /**
+     * @var \Tradesy\Innobackupex\Backup\Info
+     */
+    protected $BackupInfo;    
     /**
      * @var string
      * @desc Max memory to use during backup ie. "1G" for 1 gigabyte
@@ -41,6 +60,25 @@ class Mysql
      * @var EncryptionConfiguration
      */
     protected $encryption_configuration;
+    /**
+     * @var \Tradesy\Innobackupex\LoadInterface[]
+     */
+    protected $load_modules;
+    /**
+     * @return EncryptionConfiguration
+     */
+    public function getEncryptionConfiguration()
+    {
+        return $this->encryption_configuration;
+    }
+
+    /**
+     * @param EncryptionConfiguration $encryption_configuration
+     */
+    public function setEncryptionConfiguration($encryption_configuration)
+    {
+        $this->encryption_configuration = $encryption_configuration;
+    }
     /**
      * @var int timestamp
      */
@@ -63,22 +101,12 @@ class Mysql
     {
         $this->memory_limit = $memory_limit;
     }
-    
-
     /**
-     * @return mixed
+     * @return ConnectionInterface
      */
-    public function getFullBackup()
+    public function getConnection()
     {
-        return $this->full_backup;
-    }
-
-    /**
-     * @param mixed $full_backup
-     */
-    public function setFullBackup($full_backup)
-    {
-        $this->full_backup = $full_backup;
+        return $this->connection;
     }
 
 
@@ -86,7 +114,7 @@ class Mysql
      * Restore constructor.
      * @param Configuration $mysql_configuration
      * @param ConnectionInterface $connection
-     * @param LoadInterfaces[] $load_modules
+     * @param LoadInterface[] $load_modules
      * @param EncryptionConfiguration $enc_config
      * @param bool $compressed
      * @param string $memory
@@ -96,7 +124,7 @@ class Mysql
     public function __construct(
         Configuration $mysql_configuration,
         ConnectionInterface $connection,
-        array $load_moduless,
+        array $load_modules,
         EncryptionConfiguration $enc_config = null,
         $compressed = false,
         $memory = "1G",
@@ -105,52 +133,119 @@ class Mysql
     ){
         $this->mysql_configuration = $mysql_configuration;
         $this->connection = $connection;
-        $this->load_modules = $load_moduless;
-        $this->encryption_configuration = $enc_config;
+        $this->load_modules = $load_modules;
         $this->encryption_configuration = $enc_config;
         $this->compressed = $compressed;
         $this->memory = $memory;
     }
 
+    protected function decryptAndDecompressBackups($backups){
+        $class = "\Tradesy\Innobackupex\Encryption\Configuration";
+        
+        $decryption_string = (($this->getEncryptionConfiguration() instanceof $class) ?
+            $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "");
+        
+        foreach($backups as $basedir) {
+            /*
+             * Next we have to check if files are encrpyted
+             */
+            $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_checkpoints";
+
+            /*
+             * If compressed and encrypted, decrypt first
+             */
+            if (!$this->getConnection()->file_exists($xtrabackup_file) &&
+                $this->getConnection()->file_exists($xtrabackup_file . ".xbcrypt")
+            ) {
+                $command = "innobackupex " .
+                    $decryption_string .
+                    " $basedir --parallel 10";
+
+                $response = $this->getConnection()->executeCommand($command);
+
+                echo $response->stdout() . "\n";
+                echo $response->stderr() . "\n";
+            }
+            /*
+             * Now if compressed, decompress
+             * xtrabackup_checkpoints doesn't get compressed, so check with different file
+             * such as xtrabackup_info
+             */
+            $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_info";
+            if (!$this->getConnection()->file_exists($xtrabackup_file) &&
+                $this->getConnection()->file_exists($xtrabackup_file . ".qp")
+            ) {
+                $command = "innobackupex " .
+                    " --decompress" .
+                    " --parallel 10" .
+                    " $basedir";
+                $response = $this->getConnection()->executeCommand($command);
+
+                echo $response->stdout() . "\n";
+                echo $response->stderr() . "\n";
+            }
+
+        }
+    }
+
     public function runRestore()
     {
         // First Check if /var/lib/mysql exists, otherwise script would fail at end
-        if(file_exists("/var/lib/mysql")){
-            die("Error: /var/lib/mysql already exists.  Please remove before running this script");
+
+        if($this->getConnection()->file_exists("/var/lib/mysql")){
+            throw new MySQLDirectoryExistsException(
+                "Error: /var/lib/mysql already exists.  
+                    Please remove before running this script",
+                0
+            );
+        }
+        /*
+         * TODO: Ensure backups are present on server 
+         *          by this point by attempting to download via load_modules unless already present
+         */
+        
+        /*
+         * get all directories associated with complete backup (full + incrementals)
+         */
+        $dirs = array_merge( 
+            $this->BackupInfo->getIncrementalBackups(), 
+            [$this->BackupInfo->getLatestFullBackup()]
+        );
+
+        /*
+         * Decrypt and decompress if necessary
+         */
+        $this->decryptAndDecompressBackups($dirs);
+
+        /*
+         * TODO: Apply log to the full backup unless already prepared
+         */
+       // if(!$this->IsFullBackupAlreadyPrepared()) {
+        $full_backup = $this->BackupInfo->getLatestFullBackup();
+            $this->ApplyLogIf($full_backup, "", true);
+       // }
+        $incrementals_array = $this->BackupInfo->getIncrementalBackups();
+        $latest_incremental = $this->BackupInfo->getLatestIncrementalBackup();
+
+        foreach($incrementals_array as $incremental){
+            // the latest incremental requires apply log, but WITHOUT--redo-only
+            $this->ApplyLogIfNecessary(
+                $this->getFullBackup(),
+                $incremental,
+                $incremental != $latest_incremental ? true : false
+            );
         }
 
-        // First Apply log with --redo-only option to base dir
-        if (strlen($this->getFullBackup())) {
-            if(!$this->IsFullBackupAlreadyPrepared()){
-                $this->ApplyLog($this->getFullBackup(), "", true);
+        // Finally Copy Back the directory
+        echo "Copying Back mysql backup\n";
+        $this->CopyBack($this->getFullBackup());
+
+        // Don't forget to chown the directory
+        echo "Chowning mysql directory \n";
+        $this->ChownDirectory();
 
 
-                // Next Apply log with --redo-only to all incremental backups except the last
-                $incremental_backups = $this->getIncrementalBackups();
-                for ($i = 0; $i < count($incremental_backups) - 1; $i++) {
-                    $this->ApplyLog($this->getFullBackup(), $incremental_backups[$i], true);
-                }
 
-                // Now if there are incremental backups, apply log to the most recent one but WITHOUT--redo-only
-                if (count($incremental_backups)) {
-                    $this->ApplyLog($this->getFullBackup(), $incremental_backups[count($incremental_backups) - 1], false);
-
-                }
-            }
-
-
-            // Finally Copy Back the directory
-            echo "Copying Back mysql backup\n";
-            $this->CopyBack($this->getFullBackup());
-
-            // Don't forget to chown the directory
-            echo "Chowning mysql directory \n";
-            $this->ChownDirectory();
-
-            // Mark full backup
-            echo "Marking backup as already prepared \n";
-            $this->MarkFullBackupAsPrepared();
-        }
     }
 
     protected function IsFullBackupAlreadyPrepared(){
@@ -159,24 +254,58 @@ class Mysql
     protected function MarkFullBackupAsPrepared(){
         exec("sudo touch " . $this->getFullBackup() . "/already_prepared");
     }
-    public function ApplyLog($base_dir, $inc_dir = "", $redo = true)
+
+    public function ApplyLogIfNecessary($base_dir, $inc_dir = "", $redo = true)
     {
+        /*
+         * TODO: Check here whether this particular directory has been prepared
+         */
         $command = "sudo innobackupex --apply-log --use-memory=" .
             $this->getMemoryLimit() . ($redo ? " --redo-only " : " ")
             . $base_dir . (strlen($inc_dir) ? " --incremental-dir=$inc_dir" : "");
-        echo "Running Command: " . $command . "\n";
-        exec($command);
-    }
 
+        echo "Backup Command: $command \n";
+        $response = $this->connection->executeCommand(
+            $command
+        );
+        // Mark backup
+        echo "Marking backup as already prepared \n";
+        /*
+         * TODO: make this work with incrementals as well
+         */
+        $this->MarkFullBackupAsPrepared();
+    }
     protected function CopyBack($base_dir)
     {
         $command = "sudo innobackupex --copy-back $base_dir ";
         echo "Running Command: " . $command . "\n";
-        exec($command);
+        $this->getConnection()->executeCommand($command);
     }
 
     protected function ChownDirectory()
     {
         exec("sudo chown -R mysql.mysql /var/lib/mysql");
+    }
+    public function fetchBackupInfo()
+    {
+        foreach ($this->load_modules  as $loadModule) {
+
+            try {
+                $loadModule->setKey(
+                    $this->BackupInfo->getRepositoryBaseName() .
+                    DIRECTORY_SEPARATOR .
+                    $this->getRelativebackupdirectory()
+                );
+                $loadModule->load($this->BackupInfo);
+                /*
+                 * optionally store backup info with save modules
+                 */
+                $loadModule->getBackupInfo($this->getBackupInfoFilename());
+                $loadModule->cleanup();
+            }catch(Exception $e){
+                // loading info failed from this module
+            }
+        }
+        return $this->BackupInfo;
     }
 }

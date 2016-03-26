@@ -13,7 +13,11 @@ interface LoadInterface
 
     public function verify();
 
-    public function getBackupInfo();
+
+    /**
+     * @return \Tradesy\Innobackupex\Backup\Info
+     */
+    public function getBackupInfo($file);
     /**
      * @param mixed $key
      */

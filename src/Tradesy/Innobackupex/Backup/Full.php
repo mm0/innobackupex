@@ -10,11 +10,6 @@ class Full extends AbstractBackup
 
     protected $save_directory_prefix = "full_backup_";
     
-    public function setRelativebackupdirectory()
-    {
-        $this->relative_backup_directory = $this->getSaveDirectoryPrefix() . 
-                date("m-j-Y--H-i-s", $this->getStartDate());
-    }
 
     public function PerformBackup()
     {
@@ -24,7 +19,10 @@ class Full extends AbstractBackup
         $port = $this->getMysqlConfiguration()->getPort();
         $directory = $this->getFullPathToBackup();
         $enc_class = "\Tradesy\Innobackupex\Encryption\Configuration";
-        
+        /*
+         * TODO: --compress-threads=
+         * TODO: --parallel
+         */
         $command =
             "innobackupex" .
             " --user=" . $user .

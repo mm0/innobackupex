@@ -14,6 +14,8 @@ use Tradesy\Innobackupex\SaveInterface;
  */
 abstract class AbstractBackup
 {
+    use \Tradesy\Innobackupex\Traits;
+
     /**
      * @var string
      * @desc Directory name relative to $save_directory
@@ -172,12 +174,7 @@ abstract class AbstractBackup
     {
         return $this->relative_backup_directory;
     }
-
-    /**
-     * @param
-     */
-    abstract function setRelativebackupdirectory();
-
+    
     /**
      * @return mixed
      */
@@ -347,7 +344,11 @@ abstract class AbstractBackup
     {
 
     }
-
+    protected function setRelativebackupdirectory()
+    {
+        $this->relative_backup_directory = $this->getSaveDirectoryPrefix() .
+            date("m-j-Y--H-i-s", $this->getStartDate());
+    }
     abstract function SaveBackupInfo();
 
     abstract function PerformBackup();

@@ -26,6 +26,20 @@ class Configuration
      * @var string
      */
     protected $password;
+    /**
+     * @var string
+     */
+    protected $data_directory = "/var/lib/mysql";
+    /**
+     * @var string
+     */
+    protected $data_owner = "mysql";
+    /**
+     * @var string
+     */
+    protected $data_group = "mysql";
+
+
 
     public function __construct(
         $host = "localhost",
@@ -86,4 +100,51 @@ class Configuration
     {
         return $this->port;
     }
+    /**
+     * @return string
+     */
+    public function getDataDirectory()
+    {
+        return $this->data_directory;
+    }
+    /**
+     * @param string $data_directory
+     */
+    public function setDataDirectory($data_directory)
+    {
+        $this->data_directory = $data_directory;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDataOwner()
+    {
+        return $this->data_owner;
+    }
+
+    /**
+     * @param string $data_owner
+     */
+    public function setDataOwner($data_owner)
+    {
+        $this->data_owner = $data_owner;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDataGroup()
+    {
+        return $this->data_group;
+    }
+
+    /**
+     * @param string $data_group
+     */
+    public function setDataGroup($data_group)
+    {
+        $this->data_group = $data_group;
+    }
+    
 }

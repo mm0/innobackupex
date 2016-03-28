@@ -71,8 +71,9 @@ class Download implements LoadInterface {
 
     }
 
-    public function load($filename)
+    public function load( \Tradesy\Innobackupex\Backup\Info $info)
     {
+        $filename = $info->getLatestFullBackup();
         # upload compressed file to s3
         $command = $this->binary 
             ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;

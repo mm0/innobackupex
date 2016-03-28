@@ -4,66 +4,10 @@ namespace Tradesy\Innobackupex\Backup;
 
 class Incremental extends AbstractBackup
 {
-
     protected $save_directory_prefix = "full_backup_";
 
-    public function setRelativebackupdirectory()
-    {
-        $this->relative_backup_directory = $this->getSaveDirectoryPrefix() .
-            date("m-j-Y--H-i-s", $this->getStartDate());
-    }
 
-    /*
-     * TODO: move this into a trait to be used my Restore\Mysql
-     */
-    protected function decryptAndDecompressBackups($backups){
-        $class = "\Tradesy\Innobackupex\Encryption\Configuration";
-
-        $decryption_string = (($this->getEncryptionConfiguration() instanceof $class) ?
-            $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "");
-
-        foreach($backups as $basedir) {
-            /*
-             * Next we have to check if files are encrpyted
-             */
-            $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_checkpoints";
-
-            /*
-             * If compressed and encrypted, decrypt first
-             */
-            if (!$this->getConnection()->file_exists($xtrabackup_file) &&
-                $this->getConnection()->file_exists($xtrabackup_file . ".xbcrypt")
-            ) {
-                $command = "innobackupex " .
-                    $decryption_string .
-                    " $basedir --parallel 10";
-
-                $response = $this->getConnection()->executeCommand($command);
-
-                echo $response->stdout() . "\n";
-                echo $response->stderr() . "\n";
-            }
-            /*
-             * Now if compressed, decompress
-             * xtrabackup_checkpoints doesn't get compressed, so check with different file
-             * such as xtrabackup_info
-             */
-            $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_info";
-            if (!$this->getConnection()->file_exists($xtrabackup_file) &&
-                $this->getConnection()->file_exists($xtrabackup_file . ".qp")
-            ) {
-                $command = "innobackupex " .
-                    " --decompress" .
-                    " --parallel 10" .
-                    " $basedir";
-                $response = $this->getConnection()->executeCommand($command);
-
-                echo $response->stdout() . "\n";
-                echo $response->stderr() . "\n";
-            }
-
-        }
-    }
+    
     public function PerformBackup()
     {
         /*
@@ -87,6 +31,10 @@ class Incremental extends AbstractBackup
 
         $this->decryptAndDecompressBackups([$basedir]);
 
+        /*
+         * TODO: --compress-threads=
+         * TODO: --parallel
+         */
         $command = "innobackupex " .
             " --user=" . $user .
             " --password=" . $password .

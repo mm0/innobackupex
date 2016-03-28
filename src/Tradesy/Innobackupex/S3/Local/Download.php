@@ -23,7 +23,6 @@ class Download implements LoadInterface {
     protected $key;
     protected $remove_file_after_upload;
     protected $concurrency;
-    protected $binary = "aws";
 
     /**
      * Upload constructor.
@@ -85,6 +84,8 @@ class Download implements LoadInterface {
         $command = $this->binary 
             ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
         echo $command;
+        $client->downloadBucket('/local/directory', 'my-bucket');
+
         $response = $this->connection->executeCommand(
             $command
         );

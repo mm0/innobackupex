@@ -14,5 +14,7 @@
             "Tradesy\\Innobackupex\\": "src/"
         }
     },
-    "require": {}
+    "require": {
+      "aws/aws-sdk-php": "2.*"
+    }
 }

@@ -52,9 +52,6 @@ class Upload implements SaveInterface {
                 0
             );
         }
-        /*
-         * TODO: Check that credentials work
-         */
         $command = $this->binary .
                     " ls | grep -c " . $this->bucket;
         echo $command;

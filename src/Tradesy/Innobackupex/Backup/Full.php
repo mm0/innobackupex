@@ -36,7 +36,7 @@ class Full extends AbstractBackup
             " --password=" . $password .
             " --host=" . $host .
             " --port=" . $port .
-            " --parallel " .
+            " --parallel 100" .
             " --no-timestamp" .
             ($this->getCompress() ? 
                 " --compress  --compress-threads=" . $this->compress_threads : "") .

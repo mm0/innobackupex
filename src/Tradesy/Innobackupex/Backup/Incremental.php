@@ -45,9 +45,13 @@ class Incremental extends AbstractBackup
             " --password=" . $password .
             " --host=" . $host .
             " --port=" . $port .
-            " --no-timestamp " .
-            ($this->getCompress() ? " --compress" : "") .
-            $encryption_string .
+            " --parallel 100" .
+            " --no-timestamp" .
+            ($this->getCompress() ?
+                " --compress  --compress-threads=" . $this->compress_threads : "") .
+            (($this->getEncryptionConfiguration() instanceof $enc_class) ?
+                $this->getEncryptionConfiguration()->getConfigurationString() .
+                " --encrypt-threads=" . $this->encrypt_threads : "" ).
             " --incremental " .
             $this->getFullPathToBackup() .
             " --incremental-basedir=" .

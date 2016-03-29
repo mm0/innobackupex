@@ -2,7 +2,7 @@
 
 /*
  *
- *  Reference: http://www.percona.com/doc/percona-xtrabackup/2.1/innobackupex/incremental_backups_innobackupex.html
+ *  @link http://www.percona.com/doc/percona-xtrabackup/2.1/innobackupex/incremental_backups_innobackupex.html
  *
  *
  *
@@ -94,12 +94,20 @@ class Mysql
         $this->memory = $memory;
     }
 
+    /**
+     * @param $directory
+     * @return bool
+     */
     public function directoryOrFileExists($directory){
         if($this->getConnection()->file_exists($directory)){
             return true;
         }
         return false;
     }
+
+    /**
+     * @param $directory
+     */
     public function loadBackupDirectory($directory){
         $base_dir = $this->BackupInfo->getBaseBackupDirectory();
         $full_dir = $base_dir . DIRECTORY_SEPARATOR . $directory;
@@ -110,6 +118,10 @@ class Mysql
             $this->loadBackupDirectoryFromModules($directory);
         }
     }
+
+    /**
+     * @param $directory
+     */
     public function loadBackupDirectoryFromModules($directory){
         foreach($this->load_modules as $module){
             $module->load($this->BackupInfo, $directory);
@@ -117,6 +129,10 @@ class Mysql
                 break;
         }
     }
+
+    /**
+     * @throws MySQLDirectoryExistsException
+     */
     public function runRestore()
     {
         $base_dir = $this->BackupInfo->getBaseBackupDirectory();
@@ -192,17 +208,29 @@ class Mysql
          */
     }
 
+    /**
+     * @param string $directory
+     * @return bool
+     */
     protected function IsDirectoryAlreadyPrepared($directory)
     {
         return $this->getConnection()->file_exists($directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file);
     }
 
+    /**
+     * @param $directory
+     */
     protected function MarkDirectoryAsPrepared($directory)
     {
         echo "writing $directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file";
         $this->getConnection()->writeFileContents($directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file, "");
     }
 
+    /**
+     * @param string $base_dir
+     * @param string $inc_dir
+     * @param bool $redo
+     */
     public function ApplyLogIfNecessary($base_dir, $inc_dir = "", $redo = true)
     {
 
@@ -240,6 +268,9 @@ class Mysql
         $this->MarkDirectoryAsPrepared((strlen($inc_dir)? $inc_backup_full_path : $full_backup_full_path));
     }
 
+    /**
+     * @param string $base_dir
+     */
     protected function CopyBack($base_dir)
     {
         $command = "innobackupex" .
@@ -251,7 +282,7 @@ class Mysql
         echo $response->stdout() . "\n";
         echo $response->stderr() . "\n";
     }
-
+    
     protected function ChownDirectory()
     {
         $command = "chown -R " .
@@ -269,6 +300,9 @@ class Mysql
         echo $response->stderr() . "\n";
     }
 
+    /**
+     * @return \Tradesy\Innobackupex\Backup\Info
+     */
     public function fetchBackupInfo()
     {
         foreach ($this->load_modules as $loadModule) {

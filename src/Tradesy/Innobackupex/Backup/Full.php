@@ -5,9 +5,16 @@ use \Tradesy\Innobackupex\Backup\AbstractBackup;
 use \Tradesy\Innobackupex\Backup\Info;
 
 
+/**
+ * Class Full
+ * @package Tradesy\Innobackupex\Backup
+ */
 class Full extends AbstractBackup
 {
 
+    /**
+     * @var string
+     */
     protected $save_directory_prefix = "full_backup_";
     
 

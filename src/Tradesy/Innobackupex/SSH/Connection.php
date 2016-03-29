@@ -32,6 +32,9 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         $this->verify();
     }
 
+    /**
+     * @throws ServerNotListeningException
+     */
     public function verify()
     {
         $this->verifySSHServerListening();
@@ -82,6 +85,11 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         );
     }
 
+    /**
+     * @param string $file
+     * @return mixed
+     * @throws SSH2ConnectionException
+     */
     public function getFileContents($file)
     {
         $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
@@ -91,10 +99,20 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         unlink($temp_file);
         return $contents;
     }
+
+    /**
+     * @return string
+     */
     public function getTemporaryDirectoryPath(){
         return "/tmp/";
     }
 
+    /**
+     * @param string $file
+     * @param string $contents
+     * @param int $mode
+     * @throws SSH2ConnectionException
+     */
     public function writeFileContents($file, $contents, $mode=0644)
     {
         $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
@@ -103,6 +121,10 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         unlink($temp_file);
     }
 
+    /**
+     * @throws SSH2AuthenticationException
+     * @throws SSH2ConnectionException
+     */
     protected
     function verifyCredentials()
     {
@@ -124,6 +146,10 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         }
     }
 
+    /**
+     * @return bool
+     * @throws ServerNotListeningException
+     */
     protected
     function verifySSHServerListening()
     {
@@ -140,10 +166,12 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
             );
         }
         fclose($serverConn);
-
         return true;
     }
 
+    /**
+     * @throws SSH2AuthenticationException
+     */
     protected
     function verifyConnection()
     {
@@ -152,7 +180,6 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         } else {
             return $this->verifyCredentials();
         }
-
     }
 
     /**
@@ -161,9 +188,8 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      */
     public
     function file_exists($file){
+        // bash
         $command = "if [ -f " . $file . " ] || [ -d " . $file . " ] ; then echo 'true'; fi ";
-      //  echo $command;
-     //   echo $this->executeCommand($command)->stdout();
          return boolval($this->executeCommand($command)->stdout()) ;
     }
 }

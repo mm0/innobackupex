@@ -2,11 +2,16 @@
 
 namespace Tradesy\Innobackupex\Backup;
 
+/**
+ * Class Incremental
+ * @package Tradesy\Innobackupex\Backup
+ */
 class Incremental extends AbstractBackup
 {
+    /**
+     * @var string
+     */
     protected $save_directory_prefix = "full_backup_";
-
-
     
     public function PerformBackup()
     {
@@ -53,7 +58,6 @@ class Incremental extends AbstractBackup
         echo $response->stdout() . "\n";
         echo $response->stderr() . "\n";
     }
-
 
     public function SaveBackupInfo()
     {

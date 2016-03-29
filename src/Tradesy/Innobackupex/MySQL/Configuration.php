@@ -40,7 +40,13 @@ class Configuration
     protected $data_group = "mysql";
 
 
-
+    /**
+     * Configuration constructor.
+     * @param string $host
+     * @param string $user
+     * @param string $password
+     * @param int $port
+     */
     public function __construct(
         $host = "localhost",
         $user = "root",
@@ -53,6 +59,9 @@ class Configuration
         $this->password = $password;
     }
 
+    /**
+     * @throws MySQLConnectionException
+     */
     public function verify()
     {
         $connect = mysqli_connect(

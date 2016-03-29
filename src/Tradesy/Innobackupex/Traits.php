@@ -29,7 +29,7 @@ trait Traits {
             ) {
                 $command = "innobackupex " .
                     $decryption_string .
-                    " $basedir --parallel 10";
+                    " $basedir --parallel 100";
 
                 $response = $this->getConnection()->executeCommand($command);
 

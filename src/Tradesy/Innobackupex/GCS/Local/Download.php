@@ -7,13 +7,13 @@ use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
 use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
-use \Aws\S3\S3Client;
+use \Google;
 
 class Download implements LoadInterface
 {
 
     /**
-     * @var \Aws\S3\S3Client
+     * @var \Google_Client
      */
     protected $client;
 
@@ -43,9 +43,10 @@ class Download implements LoadInterface
         $this->bucket = $bucket;
         $this->region = $region;
         $this->concurrency = $concurrency;
-        $this->client = S3Client::factory([
-            "region" => $this->region
-        ]);
+        $this->client = new \Google_Client();
+        $this->client->setApplicationName("My Application");
+        $this->client->setDeveloperKey("MY_SIMPLE_API_KEY");
+
         $this->testSave();
 
     }
@@ -67,6 +68,14 @@ class Download implements LoadInterface
         //$filename = $info->getLatestFullBackup();
         echo "downloading $filename\n\n";
         echo "saving to: "  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR  ."\n\n";
+        $service = new \Google_Service_Storage($this->client);
+        $object = $service->objects->get( $this->bucket, $filename )->;
+        $request = new Google_Http_Request($object['mediaLink'], 'GET');
+        $signed_request = $this->client->getAuth()->sign($request);
+        $http_request = $this->client->getIo()->makeRequest($signed_request);
+        echo $http_request->getResponseBody();
+
+
         $this->client->downloadBucket(
             $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename ,
             $this->bucket,

@@ -36,6 +36,14 @@ abstract class AbstractBackup
      */
     protected $compress;
     /**
+     * @var int
+     */
+    protected $compress_threads;
+    /**
+     * @var int
+     */
+    protected $encrypt_threads;
+    /**
      * @var Configuration
      */
     protected $mysql_configuration;
@@ -92,19 +100,23 @@ abstract class AbstractBackup
         array $save_modules,
         EncryptionConfiguration $enc_config = null,
         $compress = false,
+        $compress_threads = 100,
+        $encrypt_threads = 100,
         $memory = "1G",
         $base_backup_directory = "/tmp",
         $save_directory_prefix = "full_backup"
     ) {
-        $this->mysql_configuration->verify();
         $this->mysql_configuration = $mysql_configuration;
         $this->connection = $connection;
         $this->save_modules = $save_modules;
         $this->encryption_configuration = $enc_config;
         $this->compress = $compress;
+        $this->compress_threads = $compress_threads;
+        $this->encrypt_threads = $encrypt_threads;
         $this->memory = $memory;
         $this->base_backup_directory = $base_backup_directory;
         $this->save_directory_prefix = $save_directory_prefix;
+        $this->mysql_configuration->verify();
 
     }
 

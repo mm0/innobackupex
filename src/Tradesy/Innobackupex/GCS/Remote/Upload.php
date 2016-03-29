@@ -72,7 +72,7 @@ class Upload implements SaveInterface {
     {
         // -m option for parallel
         $command = $this->binary .
-            " -m rsync  $filename gs://" . 
+            " -m rsync -r  $filename gs://" .
             $this->bucket . "/" . 
             $this->key;
         echo $command;

@@ -36,10 +36,13 @@ class Full extends AbstractBackup
             " --password=" . $password .
             " --host=" . $host .
             " --port=" . $port .
+            " --parallel " .
             " --no-timestamp" .
-            ($this->getCompress() ? " --compress" : "") .
+            ($this->getCompress() ? 
+                " --compress  --compress-threads=" . $this->compress_threads : "") .
             (($this->getEncryptionConfiguration() instanceof $enc_class) ?
-                $this->getEncryptionConfiguration()->getConfigurationString() : "" ).
+                $this->getEncryptionConfiguration()->getConfigurationString() .
+                " --encrypt-threads=" . $this->encrypt_threads : "" ).
             " " . $directory ;
 
         echo "Backup Command: $command \n";

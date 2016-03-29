@@ -46,16 +46,14 @@ class Configuration
         $user = "root",
         $password = "",
         $port = 3306
-
     ) {
         $this->host = $host;
         $this->port = $port;
         $this->user = $user;
         $this->password = $password;
-        $this->verify();
     }
 
-    protected function verify()
+    public function verify()
     {
         $connect = mysqli_connect(
             $this->host,
@@ -146,5 +144,5 @@ class Configuration
     {
         $this->data_group = $data_group;
     }
-    
+
 }

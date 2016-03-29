@@ -9,7 +9,8 @@ use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
 use \Aws\S3\S3Client;
 
-class Download implements LoadInterface {
+class Download implements LoadInterface
+{
 
     /**
      * @var \Aws\S3\S3Client
@@ -21,7 +22,6 @@ class Download implements LoadInterface {
     protected $region;
     protected $source;
     protected $key;
-    protected $remove_file_after_upload;
     protected $concurrency;
 
     /**
@@ -37,62 +37,56 @@ class Download implements LoadInterface {
         ConnectionInterface $connection,
         $bucket,
         $region,
-        $remove_file_after_upload = false,
         $concurrency = 10
-    ){
-        $this->connection               = $connection;
-        $this->bucket                   = $bucket;
-        $this->region                   = $region;
-        $this->remove_file_after_upload = $remove_file_after_upload;
-        $this->concurrency              = $concurrency;
+    ) {
+        $this->connection = $connection;
+        $this->bucket = $bucket;
+        $this->region = $region;
+        $this->concurrency = $concurrency;
+        $this->client = S3Client::factory([
+            "region" => $this->region
+        ]);
         $this->testSave();
-        $this->client = Aws\S3\S3Client
+
     }
+
     public function testSave()
     {
-        $command = "which " . $this->binary;
-        $response = $this->connection->executeCommand($command);
-        if(strlen($response->stdout()) == 0 
-            || preg_match("/not found/i", $response->stdout())){
-            throw new CLINotFoundException(
-                $this->binary ." CLI not installed.",
-                0
-            );
-        }
-        /*
-         * TODO: Check that credentials work
-         */
-        $command = $this->binary .
-                    " --region " . $this->region .
-                    " s3 ls | grep -c " . $this->bucket;
-        echo $command;
-        $response = $this->connection->executeCommand($command);
-        if(intval($response->stdout())==0){
+        if (!$this->client->doesBucketExist($this->bucket)) {
             throw new BucketNotFoundException(
-                "S3 bucket (" . $this->bucket . ")  not found in region (" . 
-                $this->region .")",
+                "S3 bucket (" . $this->bucket . ")  not found in region (" .
+                $this->region . ")",
                 0
             );
         }
 
     }
 
-    public function load( \Tradesy\Innobackupex\Backup\Info $info)
+    public function load(\Tradesy\Innobackupex\Backup\Info $info, $filename)
     {
-        $filename = $info->getLatestFullBackup();
-        # upload compressed file to s3
-        $command = $this->binary 
-            ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
-        echo $command;
-        $client->downloadBucket('/local/directory', 'my-bucket');
+        //$filename = $info->getLatestFullBackup();
+        echo "downloading $filename\n\n";
+        echo "saving to: "  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR  ."\n\n";
+        $this->client->downloadBucket(
+            $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename ,
+            $this->bucket,
+            DIRECTORY_SEPARATOR . $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename,
+            [
+                "allow_resumable" => false,
+                "concurrency" => $this->concurrency,
+                "base_dir" => $info->getRepositoryBaseName(). DIRECTORY_SEPARATOR . $filename,
+                "debug" => true
+            ]);
 
+        /*
         $response = $this->connection->executeCommand(
             $command
         );
         echo $response->stdout();
         echo $response->stderr();
-
+        */
     }
+
     public function cleanup()
     {
         /* $command = "sudo rm -f " . $this->getFullPathToBackup();
@@ -102,7 +96,8 @@ class Download implements LoadInterface {
         */
     }
 
-    public function getBackupInfo($backup_info_filename){
+    public function getBackupInfo($backup_info_filename)
+    {
 
         $response = $this->connection->executeCommand($command);
         echo $response->stdout();
@@ -114,6 +109,7 @@ class Download implements LoadInterface {
     {
 
     }
+
     /**
      * @param mixed $key
      */

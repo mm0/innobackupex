@@ -112,12 +112,9 @@ class Mysql
     }
     public function loadBackupDirectoryFromModules($directory){
         foreach($this->load_modules as $module){
-            $module->load($directory);
+            $module->load($this->BackupInfo, $directory);
             if($this->directoryOrFileExists($directory)) // don't proceed to next module since already loaded
                 break;
-            /*
-             * TODO: load the backup from load module
-             */
         }
     }
     public function runRestore()

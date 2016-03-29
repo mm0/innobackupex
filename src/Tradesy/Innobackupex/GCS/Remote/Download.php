@@ -98,7 +98,7 @@ class Download implements LoadInterface {
         echo $response->stderr();
 
     }
-    public function load( \Tradesy\Innobackupex\Backup\Info $info)
+    public function load( \Tradesy\Innobackupex\Backup\Info $info, $filename)
     {
         $filename = $info->getLatestFullBackup();
         # upload compressed file to s3

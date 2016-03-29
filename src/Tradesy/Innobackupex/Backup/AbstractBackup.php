@@ -96,6 +96,7 @@ abstract class AbstractBackup
         $base_backup_directory = "/tmp",
         $save_directory_prefix = "full_backup"
     ) {
+        $this->mysql_configuration->verify();
         $this->mysql_configuration = $mysql_configuration;
         $this->connection = $connection;
         $this->save_modules = $save_modules;

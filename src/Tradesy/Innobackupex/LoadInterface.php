@@ -5,7 +5,7 @@ namespace Tradesy\Innobackupex;
 interface LoadInterface
 {
 
-    public function load(\Tradesy\Innobackupex\Backup\Info $backupInfo);
+    public function load(\Tradesy\Innobackupex\Backup\Info $backupInfo, $backup);
 
     public function testSave();
 

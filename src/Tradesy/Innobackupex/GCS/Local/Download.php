@@ -1,6 +1,6 @@
 <?php
 
-namespace Tradesy\Innobackupex\S3\Local;
+namespace Tradesy\Innobackupex\GCS\Local;
 
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\LoadInterface;

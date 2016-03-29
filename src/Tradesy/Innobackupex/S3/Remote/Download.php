@@ -53,9 +53,6 @@ class Download implements LoadInterface {
                 0
             );
         }
-        /*
-         * TODO: Check that credentials work
-         */
         $command = $this->binary .
                     " --region " . $this->region .
                     " s3 ls | grep -c " . $this->bucket;

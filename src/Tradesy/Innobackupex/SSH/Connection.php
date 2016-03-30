@@ -26,6 +26,27 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      */
     protected $connection;
 
+    /**
+     * @var bool
+     */
+    protected $sudo_all = false;
+
+    /**
+     * @return boolean
+     */
+    public function isSudoAll()
+    {
+        return $this->sudo_all;
+    }
+
+    /**
+     * @param boolean $sudo_all
+     */
+    public function setSudoAll($sudo_all)
+    {
+        $this->sudo_all = $sudo_all;
+    }
+
     function __construct(Configuration $config)
     {
         $this->config = $config;
@@ -70,7 +91,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     {
         $stream = ssh2_exec(
             $this->getConnection(),
-            $command,
+            ($this->isSudoAll() ? "sudo " : "" ) . $command ,
             true
         );
         $stderrStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);

@@ -23,10 +23,10 @@ class Incremental extends AbstractBackup
         $password = $this->getMysqlConfiguration()->getPassword();
         $host = $this->getMysqlConfiguration()->getHost();
         $port = $this->getMysqlConfiguration()->getPort();
-        $x = "\Tradesy\Innobackupex\Encryption\Configuration";
+        $enc_class = "\Tradesy\Innobackupex\Encryption\Configuration";
 
 
-        $encryption_string = (($this->getEncryptionConfiguration() instanceof $x) ?
+        $encryption_string = (($this->getEncryptionConfiguration() instanceof $enc_class) ?
             $this->getEncryptionConfiguration()->getConfigurationString() : "");
 
         $basedir = $this->BackupInfo->getBaseBackupDirectory() . DIRECTORY_SEPARATOR .

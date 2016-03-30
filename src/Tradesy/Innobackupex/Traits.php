@@ -22,6 +22,9 @@ trait Traits {
             $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_checkpoints";
 
             /*
+             * TODO: Better detection of compressed/encryption
+             */
+            /*
              * If compressed and encrypted, decrypt first
              */
             if (!$this->getConnection()->file_exists($xtrabackup_file) &&
@@ -41,7 +44,10 @@ trait Traits {
              * xtrabackup_checkpoints doesn't get compressed, so check with different file
              * such as xtrabackup_info
              */
+
             $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_info";
+
+
             if (!$this->getConnection()->file_exists($xtrabackup_file) &&
                 $this->getConnection()->file_exists($xtrabackup_file . ".qp")
             ) {

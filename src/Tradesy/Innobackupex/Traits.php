@@ -30,7 +30,7 @@ trait Traits {
                 $command = "innobackupex " .
                     $decryption_string .
                     " $basedir --parallel 100";
-
+                echo "Decrypting command: " . $command;
                 $response = $this->getConnection()->executeCommand($command);
 
                 echo $response->stdout() . "\n";
@@ -49,6 +49,7 @@ trait Traits {
                     " --decompress" .
                     " --parallel 10" .
                     " $basedir";
+                echo "Decompressing command: " . $command;
                 $response = $this->getConnection()->executeCommand($command);
 
                 echo $response->stdout() . "\n";

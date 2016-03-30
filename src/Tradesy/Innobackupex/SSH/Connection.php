@@ -70,7 +70,8 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     {
         $stream = ssh2_exec(
             $this->getConnection(),
-            $command
+            $command,
+            true
         );
         $stderrStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
         stream_set_blocking($stream, true);

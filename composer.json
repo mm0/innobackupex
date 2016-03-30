@@ -3,6 +3,7 @@
     "description": "Wrapper for innobackupex incremental backup/restore with ability to store backups on various repository (AWS S3, Google)",
     "type": "php",
     "license": "MIT",
+    "minimum-stability": "dev",
     "authors": [
         {
             "name": "Matt Margolin",

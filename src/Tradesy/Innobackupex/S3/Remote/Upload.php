@@ -113,6 +113,9 @@ class Upload implements SaveInterface {
             $info->getRepositoryBaseName() .
             DIRECTORY_SEPARATOR .
             "$filename";
+        $response = $this->connection->executeCommand($command);
+        echo $response->stdout();
+        echo $response->stderr();
     }
 
     public function verify()

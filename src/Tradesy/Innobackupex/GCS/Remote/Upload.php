@@ -93,13 +93,24 @@ class Upload implements SaveInterface {
         $serialized = serialize($info);
 
         $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
-        $command = $this->binary . " cp /tmp/temporary_backup_info gs://" . $this->bucket . "/tradesy_percona_backup_info";
+        $command = $this->binary . 
+            " cp /tmp/temporary_backup_info gs://" . $this->bucket .
+            DIRECTORY_SEPARATOR.
+            "$filename";
         echo "Upload latest backup info to GCS with command: $command \n";
 
         $response = $this->connection->executeCommand($command);
         echo $response->stdout();
         echo $response->stderr();
-
+        $command = $this->binary .
+            " cp /tmp/temporary_backup_info gs://" . $this->bucket .
+            DIRECTORY_SEPARATOR .
+            $info->getRepositoryBaseName() .
+            DIRECTORY_SEPARATOR .
+            "$filename";
+        $response = $this->connection->executeCommand($command);
+        echo $response->stdout();
+        echo $response->stderr();
     }
 
     public function verify()

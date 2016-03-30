@@ -35,11 +35,7 @@ class Incremental extends AbstractBackup
                 $this->BackupInfo->getLatestIncrementalBackup());
 
         $this->decryptAndDecompressBackups([$basedir]);
-
-        /*
-         * TODO: --compress-threads=
-         * TODO: --parallel
-         */
+        
         $command = "innobackupex " .
             " --user=" . $user .
             " --password=" . $password .

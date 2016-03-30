@@ -7,14 +7,16 @@
  */
 namespace Tradesy\Innobackupex;
 
-trait Traits {
-    function decryptAndDecompressBackups($backups){
+trait Traits
+{
+    function decryptAndDecompressBackups($backups)
+    {
         $class = "\Tradesy\Innobackupex\Encryption\Configuration";
 
         $decryption_string = (($this->getEncryptionConfiguration() instanceof $class) ?
             $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "");
 
-        foreach($backups as $basedir) {
+        foreach ($backups as $basedir) {
             echo "\n\n PROCESSING: " . $basedir . " \n\n\n";
             /*
              * Next we have to check if files are encrpyted
@@ -24,6 +26,7 @@ trait Traits {
             /*
              * TODO: Better detection of compressed/encryption
              */
+
             /*
              * If compressed and encrypted, decrypt first
              */
@@ -32,7 +35,8 @@ trait Traits {
             ) {
                 $command = "innobackupex " .
                     $decryption_string .
-                    " $basedir --parallel 100";
+                    " --parallel " . $this->parallel_threads .
+                    $basedir;
                 echo "Decrypting command: " . $command;
                 $response = $this->getConnection()->executeCommand($command);
 
@@ -53,7 +57,7 @@ trait Traits {
             ) {
                 $command = "innobackupex " .
                     " --decompress" .
-                    " --parallel 10" .
+                    " --parallel " . $this->parallel_threads .
                     " $basedir";
                 echo "Decompressing command: " . $command;
                 $response = $this->getConnection()->executeCommand($command);
@@ -64,6 +68,7 @@ trait Traits {
 
         }
     }
+
     /**
      * @return ConnectionInterface
      */

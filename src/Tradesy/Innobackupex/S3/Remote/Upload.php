@@ -32,13 +32,11 @@ class Upload implements SaveInterface {
         ConnectionInterface $connection,
         $bucket,
         $region,
-        $remove_file_after_upload = false,
         $concurrency = 10
     ){
         $this->connection               = $connection;
         $this->bucket                   = $bucket;
         $this->region                   = $region;
-        $this->remove_file_after_upload = $remove_file_after_upload;
         $this->concurrency              = $concurrency;
         $this->testSave();
     }

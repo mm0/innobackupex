@@ -116,8 +116,11 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     {
         $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
         echo "temp" . $temp_file;
-        ssh2_scp_recv($this->getConnection(), $file, $temp_file);
-        $contents = file_get_contents($temp_file);
+        if(ssh2_scp_recv($this->getConnection(), $file, $temp_file)){
+            $contents = file_get_contents($temp_file);
+        }else{
+            $contents ="";
+        }
         unlink($temp_file);
         return $contents;
     }

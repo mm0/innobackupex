@@ -63,8 +63,10 @@ class Mysql
      * @var int timestamp
      */
     protected $end_date;
-
-
+    /**
+     * @var int
+     */
+    protected $parallel_threads;
     /**
      * Restore constructor.
      * @param Configuration $mysql_configuration
@@ -72,6 +74,7 @@ class Mysql
      * @param LoadInterface[] $load_modules
      * @param EncryptionConfiguration $enc_config
      * @param bool $compressed
+     * @param int $parallel_threads
      * @param string $memory
      * @param string $base_backup_directory
      * @param string $save_directory_prefix
@@ -82,6 +85,7 @@ class Mysql
         array $load_modules,
         EncryptionConfiguration $enc_config = null,
         $compressed = false,
+        $parallel_threads = 10,
         $memory = "1G",
         $base_backup_directory = "/tmp",
         $save_directory_prefix = "full_backup"
@@ -89,6 +93,7 @@ class Mysql
         $this->mysql_configuration = $mysql_configuration;
         $this->connection = $connection;
         $this->load_modules = $load_modules;
+        $this->parallel_threads = $parallel_threads;
         $this->encryption_configuration = $enc_config;
         $this->compressed = $compressed;
         $this->memory = $memory;
@@ -258,7 +263,7 @@ class Mysql
 
         echo "Backup Command: $command \n";
         $response = $this->connection->executeCommand(
-            $command
+            $command, true
         );
 
         echo $response->stdout() . "\n";

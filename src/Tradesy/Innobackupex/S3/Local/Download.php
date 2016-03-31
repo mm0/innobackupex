@@ -67,16 +67,22 @@ class Download implements LoadInterface
         //$filename = $info->getLatestFullBackup();
         echo "downloading $filename\n\n";
         echo "saving to: "  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR  ."\n\n";
-        $this->client->downloadBucket(
-            $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename ,
-            $this->bucket,
-            DIRECTORY_SEPARATOR . $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename,
-            [
-                "allow_resumable" => false,
-                "concurrency" => $this->concurrency,
-                "base_dir" => $info->getRepositoryBaseName(). DIRECTORY_SEPARATOR . $filename,
-                "debug" => true
-            ]);
+        try {
+            $this->client->downloadBucket(
+                $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename,
+                $this->bucket,
+                DIRECTORY_SEPARATOR . $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename,
+                [
+                    "allow_resumable" => true,
+                    "concurrency" => $this->concurrency,
+                    "base_dir" => $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename,
+                    "debug" => true
+                ]
+            );
+        }catch(\Exception $e){
+            echo 'exception';
+        }
+        return;
     }
 
     public function cleanup()

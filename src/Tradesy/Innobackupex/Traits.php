@@ -36,9 +36,9 @@ trait Traits
                 $command = "innobackupex " .
                     $decryption_string .
                     " --parallel " . $this->parallel_threads .
-                    $basedir;
+                    " $basedir";
                 echo "Decrypting command: " . $command;
-                $response = $this->getConnection()->executeCommand($command);
+                $response = $this->getConnection()->executeCommand($command,true);
 
                 echo $response->stdout() . "\n";
                 echo $response->stderr() . "\n";
@@ -60,7 +60,7 @@ trait Traits
                     " --parallel " . $this->parallel_threads .
                     " $basedir";
                 echo "Decompressing command: " . $command;
-                $response = $this->getConnection()->executeCommand($command);
+                $response = $this->getConnection()->executeCommand($command,true);
 
                 echo $response->stdout() . "\n";
                 echo $response->stderr() . "\n";

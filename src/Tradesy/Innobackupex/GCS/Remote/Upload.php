@@ -90,11 +90,14 @@ class Upload implements SaveInterface {
     }
 
     public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename){
+        // create temp file
+        $response = $this->connection->executeCommand("mktemp", true);
+        $file = rtrim($response->stdout());
         $serialized = serialize($info);
 
-        $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
+        $response = $this->connection->writeFileContents("$file", $serialized);
         $command = $this->binary . 
-            " cp /tmp/temporary_backup_info gs://" . $this->bucket .
+            " cp $file gs://" . $this->bucket .
             DIRECTORY_SEPARATOR.
             "$filename";
         echo "Upload latest backup info to GCS with command: $command \n";
@@ -103,7 +106,7 @@ class Upload implements SaveInterface {
         echo $response->stdout();
         echo $response->stderr();
         $command = $this->binary .
-            " cp /tmp/temporary_backup_info gs://" . $this->bucket .
+            " cp $file gs://" . $this->bucket .
             DIRECTORY_SEPARATOR .
             $info->getRepositoryBaseName() .
             DIRECTORY_SEPARATOR .

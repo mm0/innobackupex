@@ -46,7 +46,7 @@ abstract class AbstractBackup
     /**
      * @var int
      */
-    protected $paralle_threads;
+    protected $parallel_threads;
     /**
      * @var Configuration
      */
@@ -117,7 +117,7 @@ abstract class AbstractBackup
         $this->encryption_configuration = $enc_config;
         $this->compress = $compress;
         $this->compress_threads = $compress_threads;
-        $this->paralle_threads = $paralle_threads;
+        $this->parallel_threads = $paralle_threads;
         $this->encrypt_threads = $encrypt_threads;
         $this->memory = $memory;
         $this->base_backup_directory = $base_backup_directory;

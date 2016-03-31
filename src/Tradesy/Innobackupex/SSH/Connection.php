@@ -87,11 +87,11 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     /**
      * @return ConnectionResponse
      */
-    public function executeCommand($command)
+    public function executeCommand($command, $no_sudo = false )
     {
         $stream = ssh2_exec(
             $this->getConnection(),
-            ($this->isSudoAll() ? "sudo " : "" ) . $command ,
+            ($this->isSudoAll() && !$no_sudo ? "sudo " : "" ) . $command ,
             true
         );
         $stderrStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
@@ -140,6 +140,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      */
     public function writeFileContents($file, $contents, $mode=0644)
     {
+        echo "Writing file: " . $file;
         $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
         file_put_contents($temp_file,$contents);
         ssh2_scp_send($this->getConnection(), $temp_file, $file, $mode);
@@ -214,7 +215,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     public
     function file_exists($file){
         // bash
-        $command = "if [ -f " . $file . " ] || [ -d " . $file . " ] ; then echo 'true'; fi ";
-         return boolval($this->executeCommand($command)->stdout()) ;
+        $sftp = ssh2_sftp($this->getConnection());
+        return file_exists('ssh2.sftp://' . $sftp . $file);
     }
 }

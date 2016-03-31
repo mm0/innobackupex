@@ -93,25 +93,28 @@ class Upload implements SaveInterface {
     }
 
     public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename){
+        // create temp file
+        $response = $this->connection->executeCommand("mktemp", true);
+        $file = rtrim($response->stdout());
         $serialized = serialize($info);
 
-        $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
+        $response = $this->connection->writeFileContents("$file", $serialized);
         $command = $this->binary .
-            " s3 cp /tmp/temporary_backup_info s3://" . $this->bucket .
+            " s3 cp $file s3://" . $this->bucket .
             DIRECTORY_SEPARATOR .
             $filename;
         echo "Upload latest backup info to S3 with command: $command \n";
 
-        $response = $this->connection->executeCommand($command);
+        $response = $this->connection->executeCommand($command,true);
         echo $response->stdout();
         echo $response->stderr();
         $command = $this->binary .
-            " s3 cp /tmp/temporary_backup_info s3://" . $this->bucket .
+            " s3 cp $file s3://" . $this->bucket .
             DIRECTORY_SEPARATOR .
             $info->getRepositoryBaseName() .
             DIRECTORY_SEPARATOR .
             "$filename";
-        $response = $this->connection->executeCommand($command);
+        $response = $this->connection->executeCommand($command,true);
         echo $response->stdout();
         echo $response->stderr();
     }

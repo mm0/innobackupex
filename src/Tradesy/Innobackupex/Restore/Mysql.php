@@ -130,7 +130,9 @@ class Mysql
     public function loadBackupDirectoryFromModules($directory){
         foreach($this->load_modules as $module){
             $module->load($this->BackupInfo, $directory);
-            if($this->directoryOrFileExists($directory)) // don't proceed to next module since already loaded
+            if($this->directoryOrFileExists($this->BackupInfo->getBaseBackupDirectory() .
+                DIRECTORY_SEPARATOR .
+                $directory)) // don't proceed to next module since already loaded
                 break;
         }
     }
@@ -169,6 +171,12 @@ class Mysql
         // add base directory prefix to path
         foreach($dirs as $dir){
             $full_dirs[] = $base_dir . DIRECTORY_SEPARATOR . $dir;
+        }
+        /*
+         * Set owner of directories recursively
+         */
+        foreach($full_dirs as $dir){
+            $this->getConnection()->executeCommand('chown -R '. $dir);
         }
         /*
          * Decrypt and decompress if necessary

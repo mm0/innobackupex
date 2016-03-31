@@ -214,7 +214,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      */
     public
     function file_exists($file){
-        // bash
+        // Note: This might cause segfault if file doesn't exist due to ssh2 lib bug
         $sftp = ssh2_sftp($this->getConnection());
         return file_exists('ssh2.sftp://' . $sftp . $file);
     }

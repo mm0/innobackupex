@@ -86,6 +86,22 @@ abstract class AbstractBackup
      */
     protected $BackupInfo;
 
+    /**
+     * @return Info
+     */
+    public function getBackupInfo()
+    {
+        return $this->BackupInfo;
+    }
+
+    /**
+     * @param Info $BackupInfo
+     */
+    public function setBackupInfo($BackupInfo)
+    {
+        $this->BackupInfo = $BackupInfo;
+    }
+
 
     /**
      * AbstractBackup constructor.

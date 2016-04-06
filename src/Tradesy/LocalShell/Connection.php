@@ -32,10 +32,8 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         $this->sudo_all = $sudo_all;
     }
 
-    function __construct(Configuration $config)
+    function __construct()
     {
-        $this->config = $config;
-        $this->verify();
     }
 
     /**

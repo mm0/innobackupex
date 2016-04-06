@@ -86,9 +86,7 @@ class Mysql
         EncryptionConfiguration $enc_config = null,
         $compressed = false,
         $parallel_threads = 10,
-        $memory = "1G",
-        $base_backup_directory = "/tmp",
-        $save_directory_prefix = "full_backup"
+        $memory = "1G"
     ) {
         $this->mysql_configuration = $mysql_configuration;
         $this->connection = $connection;

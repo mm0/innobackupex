@@ -55,17 +55,30 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     public function executeCommand($command, $no_sudo = false )
     {
         $command = ($this->isSudoAll() && !$no_sudo ? "sudo " : "" ) . $command;
-        $proc = proc_open(
+
+        // Hacky way to get stderr, but proc_open seems to block indefinitely
+        $tmpfname = tempnam("/tmp", "innobackupex");
+        $stdout = shell_exec($command . " 2>$tmpfname");
+        $stderr = file_get_contents($tmpfname);
+        unlink($tmpfname);
+
+        /* Doesn't work for some reason
+         $proc = proc_open(
             $command,[
+            0 => ['pipe','r'],
             1 => ['pipe','w'],
             2 => ['pipe','w'],
         ],$pipes);
+        stream_set_blocking($pipes[0], 0);
+        stream_set_blocking($pipes[1], 1);
+        stream_set_blocking($pipes[2], 1);
+
         $stdout = stream_get_contents($pipes[1]);
         fclose($pipes[1]);
         $stderr = stream_get_contents($pipes[2]);
         fclose($pipes[2]);
         proc_close($proc);
-
+         */
         return new ConnectionResponse(
             $command,
             $stdout,

@@ -54,8 +54,9 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      */
     public function executeCommand($command, $no_sudo = false )
     {
+        $command = ($this->isSudoAll() && !$no_sudo ? "sudo " : "" ) . $command;
         $proc = proc_open(
-            ($this->isSudoAll() && !$no_sudo ? "sudo " : "" ) . $command,[
+            $command,[
             1 => ['pipe','w'],
             2 => ['pipe','w'],
         ],$pipes);

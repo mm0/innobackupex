@@ -73,7 +73,7 @@ class Download implements LoadInterface
                 $this->bucket,
                 DIRECTORY_SEPARATOR . $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename,
                 [
-                    "allow_resumable" => true,
+                    "allow_resumable" => false,
                     "concurrency" => $this->concurrency,
                     "base_dir" => $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename,
                     "debug" => true

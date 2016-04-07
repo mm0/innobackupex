@@ -19,19 +19,13 @@ trait Traits
         foreach ($backups as $basedir) {
             echo "\n\n PROCESSING: " . $basedir . " \n\n\n";
             /*
-             * Next we have to check if files are encrpyted
-             */
-            $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_checkpoints";
-
-            /*
-             * TODO: Better detection of compressed/encryption
+             * Next we have to check if files are encrpyted,
              */
 
             /*
              * If compressed and encrypted, decrypt first
              */
-            if (!$this->getConnection()->file_exists($xtrabackup_file) &&
-                $this->getConnection()->file_exists($xtrabackup_file . ".xbcrypt")
+            if ($this->decryptionRequired($basedir)
             ) {
                 $command = "innobackupex " .
                     $decryption_string .
@@ -52,8 +46,7 @@ trait Traits
             $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_info";
 
 
-            if (!$this->getConnection()->file_exists($xtrabackup_file) &&
-                $this->getConnection()->file_exists($xtrabackup_file . ".qp")
+            if ($this->decompressionRequired($basedir)
             ) {
                 $command = "innobackupex " .
                     " --decompress" .
@@ -68,7 +61,29 @@ trait Traits
 
         }
     }
+    public function decryptionRequired($directory){
+        $files = $this->getConnection()->scandir($directory);
+        $pattern = '/.*\.xbcrypt$/';
+        $matches = preg_grep($pattern,$files);
+        $do_these_files_exist = str_replace(".xbcrypt", "" , $matches);
+        foreach($do_these_files_exist as $file){
+            if(!in_array($file,$files))
+                return true;
+        }
+        return false;
+    }
 
+    public function decompressionRequired($directory){
+        $files = $this->getConnection()->scandir($directory);
+        $pattern = '/.*\.qp$/';
+        $matches = preg_grep($pattern,$files);
+        $do_these_files_exist = str_replace(".qp", "" , $matches);
+        foreach($do_these_files_exist as $file){
+            if(!in_array($file,$files))
+                return true;
+        }
+        return false;
+    }
     /**
      * @return ConnectionInterface
      */

@@ -126,4 +126,12 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     function file_exists($file){
         return file_exists($file);
     }
+
+    /**
+     * @param string $directory
+     * @return mixed
+     */
+    public function scandir($directory){
+        return scandir($directory);
+    }
 }

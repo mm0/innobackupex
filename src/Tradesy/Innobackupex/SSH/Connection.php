@@ -218,4 +218,13 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         $sftp = ssh2_sftp($this->getConnection());
         return file_exists('ssh2.sftp://' . $sftp . $file);
     }
+    
+    /**
+     * @param string $directory
+     * @return mixed
+     */
+    public function scandir($directory){
+        $sftp = ssh2_sftp($this->getConnection());
+        return scandir('ssh2.sftp://' . $sftp . $directory);
+    }
 }

@@ -35,4 +35,5 @@ interface ConnectionInterface
 
     function verify();
 
+    function scandir($directory);
 }

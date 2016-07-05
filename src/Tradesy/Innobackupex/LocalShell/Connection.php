@@ -3,6 +3,8 @@
 namespace Tradesy\Innobackupex\LocalShell;
 
 use Tradesy\Innobackupex\ConnectionResponse;
+use Tradesy\Innobackupex\Exceptions\ServerNotListeningException;
+use Tradesy\Innobackupex\LoggingTraits;
 
 /**
  * Class Connection
@@ -10,7 +12,8 @@ use Tradesy\Innobackupex\ConnectionResponse;
  */
 class Connection implements \Tradesy\Innobackupex\ConnectionInterface
 {
-
+    use LoggingTraits;
+    
     /**
      * @var bool
      */
@@ -32,6 +35,9 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         $this->sudo_all = $sudo_all;
     }
 
+    /**
+     * Connection constructor.
+     */
     function __construct()
     {
     }
@@ -116,7 +122,6 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     {
         file_put_contents($file,$contents);
     }
-    
 
     /**
      * @param string $file

@@ -2,17 +2,21 @@
 
 namespace Tradesy\Innobackupex\SSH;
 
+use Tradesy\Innobackupex\ConnectionInterface;
 use Tradesy\Innobackupex\Exceptions\SSH2AuthenticationException;
 use Tradesy\Innobackupex\Exceptions\ServerNotListeningException;
 use Tradesy\Innobackupex\Exceptions\SSH2ConnectionException;
 use Tradesy\Innobackupex\ConnectionResponse;
+use Tradesy\Innobackupex\LoggingTraits;
 
 /**
  * Class Connection
  * @package Tradesy\Innobackupex
  */
-class Connection implements \Tradesy\Innobackupex\ConnectionInterface
+class Connection implements ConnectionInterface
 {
+    use LoggingTraits;
+    
     /**
      * @var Configuration
      */
@@ -61,6 +65,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         $this->verifySSHServerListening();
         $this->verifyConnection();
     }
+
     /**
      * @return resource
      */
@@ -84,14 +89,15 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
 
         return $this->connection;
     }
+
     /**
      * @return ConnectionResponse
      */
-    public function executeCommand($command, $no_sudo = false )
+    public function executeCommand($command, $no_sudo = false)
     {
         $stream = ssh2_exec(
             $this->getConnection(),
-            ($this->isSudoAll() && !$no_sudo ? "sudo " : "" ) . $command ,
+            ($this->isSudoAll() && !$no_sudo ? "sudo " : "") . $command,
             true
         );
         $stderrStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
@@ -114,21 +120,23 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      */
     public function getFileContents($file)
     {
-        $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
-        echo "temp" . $temp_file;
-        if(ssh2_scp_recv($this->getConnection(), $file, $temp_file)){
+        $temp_file = tempnam($this->getTemporaryDirectoryPath(), "");
+        $this->logDebug("Temp filename generated: " . $temp_file);
+        if (ssh2_scp_recv($this->getConnection(), $file, $temp_file)) {
             $contents = file_get_contents($temp_file);
-        }else{
-            $contents ="";
+        } else {
+            $contents = "";
         }
         unlink($temp_file);
+
         return $contents;
     }
 
     /**
      * @return string
      */
-    public function getTemporaryDirectoryPath(){
+    public function getTemporaryDirectoryPath()
+    {
         return "/tmp/";
     }
 
@@ -138,11 +146,11 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      * @param int $mode
      * @throws SSH2ConnectionException
      */
-    public function writeFileContents($file, $contents, $mode=0644)
+    public function writeFileContents($file, $contents, $mode = 0644)
     {
-        echo "Writing file: " . $file;
-        $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
-        file_put_contents($temp_file,$contents);
+        $this->logTrace("Writing file: " . $file);
+        $temp_file = tempnam($this->getTemporaryDirectoryPath(), "");
+        file_put_contents($temp_file, $contents);
         ssh2_scp_send($this->getConnection(), $temp_file, $file, $mode);
         unlink($temp_file);
     }
@@ -192,14 +200,14 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
             );
         }
         fclose($serverConn);
+
         return true;
     }
 
     /**
      * @throws SSH2AuthenticationException
      */
-    protected
-    function verifyConnection()
+    protected function verifyConnection()
     {
         if ($this->authenticated) {
             return;
@@ -212,19 +220,22 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      * @param string $file
      * @return boolean
      */
-    public
-    function file_exists($file){
+    public function file_exists($file)
+    {
         // Note: This might cause segfault if file doesn't exist due to ssh2 lib bug
         $sftp = ssh2_sftp($this->getConnection());
+
         return file_exists('ssh2.sftp://' . $sftp . $file);
     }
-    
+
     /**
      * @param string $directory
      * @return mixed
      */
-    public function scandir($directory){
+    public function scandir($directory)
+    {
         $sftp = ssh2_sftp($this->getConnection());
+
         return scandir('ssh2.sftp://' . $sftp . $directory);
     }
 }

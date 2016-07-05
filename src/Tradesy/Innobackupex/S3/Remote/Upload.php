@@ -2,21 +2,52 @@
 
 namespace Tradesy\Innobackupex\S3\Remote;
 
+use Tradesy\Innobackupex\LoggingTraits;
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\SaveInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
 use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
 
-class Upload implements SaveInterface {
+/**
+ * Class Upload
+ * @package Tradesy\Innobackupex\S3\Remote
+ */
+class Upload implements SaveInterface
+{
 
+    use LoggingTraits;
+    /**
+     * @var ConnectionInterface
+     */
     protected $connection;
+    /**
+     * @var
+     */
     protected $bucket;
+    /**
+     * @var
+     */
     protected $region;
+    /**
+     * @var
+     */
     protected $source;
+    /**
+     * @var
+     */
     protected $key;
+    /**
+     * @var
+     */
     protected $remove_file_after_upload;
+    /**
+     * @var int
+     */
     protected $concurrency;
+    /**
+     * @var string
+     */
     protected $binary = "aws";
 
     /**
@@ -33,18 +64,23 @@ class Upload implements SaveInterface {
         $bucket,
         $region,
         $concurrency = 10
-    ){
-        $this->connection               = $connection;
-        $this->bucket                   = $bucket;
-        $this->region                   = $region;
-        $this->concurrency              = $concurrency;
+    ) {
+        $this->connection = $connection;
+        $this->bucket = $bucket;
+        $this->region = $region;
+        $this->concurrency = $concurrency;
         $this->testSave();
     }
+
+    /**
+     * @throws BucketNotFoundException
+     * @throws CLINotFoundException
+     */
     public function testSave()
     {
         $command = "which " . $this->binary;
         $response = $this->connection->executeCommand($command);
-        if(strlen($response->stdout()) == 0 || preg_match("/not found/i", $response->stdout())){
+        if (strlen($response->stdout()) == 0 || preg_match("/not found/i", $response->stdout())) {
             throw new CLINotFoundException(
                 $this->binary . " CLI not installed.",
                 0
@@ -54,26 +90,29 @@ class Upload implements SaveInterface {
          * TODO: Check that credentials work
          */
         $command = $this->binary .
-                    " --region " . $this->region .
-                    " s3 ls | grep -c " . $this->bucket;
+            " --region " . $this->region .
+            " s3 ls | grep -c " . $this->bucket;
         echo $command;
         $response = $this->connection->executeCommand($command);
-        if(intval($response->stdout())==0){
+        if (intval($response->stdout()) == 0) {
             throw new BucketNotFoundException(
-                "S3 bucket (" . $this->bucket . ")  not found in region (" . $this->region .")",
+                "S3 bucket (" . $this->bucket . ")  not found in region (" . $this->region . ")",
                 0
             );
         }
 
     }
 
+    /**
+     * @param string $filename
+     */
     public function save($filename)
     {
         # upload compressed file to s3
         $command = $this->binary .
-            " s3 sync $filename s3://" . 
-            $this->bucket . 
-            "/" . 
+            " s3 sync $filename s3://" .
+            $this->bucket .
+            "/" .
             $this->key;
         echo $command;
         $response = $this->connection->executeCommand(
@@ -83,6 +122,10 @@ class Upload implements SaveInterface {
         echo $response->stderr();
 
     }
+
+    /**
+     *
+     */
     public function cleanup()
     {
         /* $command = "sudo rm -f " . $this->getFullPathToBackup();
@@ -92,7 +135,12 @@ class Upload implements SaveInterface {
         */
     }
 
-    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename){
+    /**
+     * @param \Tradesy\Innobackupex\Backup\Info $info
+     * @param $filename
+     */
+    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename)
+    {
         // create temp file
         $response = $this->connection->executeCommand("mktemp", true);
         $file = rtrim($response->stdout());
@@ -105,7 +153,7 @@ class Upload implements SaveInterface {
             $filename;
         echo "Upload latest backup info to S3 with command: $command \n";
 
-        $response = $this->connection->executeCommand($command,true);
+        $response = $this->connection->executeCommand($command, true);
         echo $response->stdout();
         echo $response->stderr();
         $command = $this->binary .
@@ -114,15 +162,19 @@ class Upload implements SaveInterface {
             $info->getRepositoryBaseName() .
             DIRECTORY_SEPARATOR .
             "$filename";
-        $response = $this->connection->executeCommand($command,true);
+        $response = $this->connection->executeCommand($command, true);
         echo $response->stdout();
         echo $response->stderr();
     }
 
+    /**
+     *
+     */
     public function verify()
     {
 
     }
+
     /**
      * @param mixed $key
      */

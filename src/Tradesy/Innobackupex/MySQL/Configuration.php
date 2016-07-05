@@ -3,13 +3,14 @@
 namespace Tradesy\Innobackupex\MySQL;
 
 use \Tradesy\Innobackupex\Exceptions\MySQLConnectionException;
+use Tradesy\Innobackupex\LoggingTraits;
 
 /**
  * A utility class, designed to store Mysql credentials
  */
 class Configuration
 {
-
+    use LoggingTraits;
     /**
      * @var string
      */

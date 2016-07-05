@@ -1,8 +1,10 @@
 <?php
 
 namespace Tradesy\Innobackupex\SSH;
+
 use Tradesy\Innobackupex\Exceptions\FileNotFoundException;
 use Tradesy\Innobackupex\Exceptions\FileNotReadableException;
+
 /**
  * Class Connection
  * @package Tradesy\Innobackupex
@@ -39,6 +41,16 @@ class Configuration
      */
     protected $ssh_options;
 
+    /**
+     * Configuration constructor.
+     * @param $host
+     * @param null $port
+     * @param $user
+     * @param $public_key_file
+     * @param $private_key_file
+     * @param null $passphrase
+     * @param array $ssh_options
+     */
     public function __construct(
         $host,
         $port = null,
@@ -58,6 +70,10 @@ class Configuration
         $this->verify();
     }
 
+    /**
+     * @throws FileNotFoundException
+     * @throws FileNotReadableException
+     */
     protected function verify()
     {
         $this->verifyFiles();
@@ -113,6 +129,11 @@ class Configuration
     {
         return $this->ssh_options;
     }
+
+    /**
+     * @throws FileNotFoundException
+     * @throws FileNotReadableException
+     */
     protected function verifyFiles()
     {
         foreach (['public_key_file', 'private_key_file'] as $file) {

@@ -2,34 +2,76 @@
 
 namespace Tradesy\Innobackupex\S3\Local;
 
+use Aws\S3\Model\MultipartUpload\UploadBuilder;
 use \Aws\S3\S3Client;
-use \Aws\S3\MultipartUploader;
-use \Aws\Exception\MultipartUploadException;
+use Tradesy\Innobackupex\Backup\Info;
+use Tradesy\Innobackupex\LoggingTraits;
+use Tradesy\Innobackupex\SaveInterface;
 
-class Upload implements \Tradesy\Innobackupex\SaveInterface
+/**
+ * Class Upload
+ * @package Tradesy\Innobackupex\S3\Local
+ */
+class Upload implements SaveInterface
 {
+    use LoggingTraits;
 
+    /**
+     * @var ConnectionInterface
+     */
+    protected $connection;
+    /**
+     * @var
+     */
     protected $bucket;
+    /**
+     * @var
+     */
     protected $region;
+    /**
+     * @var S3Client
+     */
     protected $client;
+    /**
+     * @var
+     */
     protected $source;
+    /**
+     * @var
+     */
     protected $key;
+    /**
+     * @var int
+     */
     protected $concurrency;
 
-    public function __construct(S3Client $client, $concurrency = 10)
+    /**
+     * Upload constructor.
+     * @param ConnectionInterface $connection
+     * @param S3Client $client
+     * @param int $concurrency
+     */
+    public function __construct(ConnectionInterface $connection, S3Client $client, $concurrency = 10)
     {
+        $this->connection = $connection;
         $this->client = $client;
         $this->concurrency = $concurrency;
     }
 
+    /**
+     *
+     */
     public function testSave()
     {
 
     }
 
+    /**
+     * @param string $filename
+     */
     public function save($filename)
     {
-        $uploader = UploadBuilder::newInstance()
+        UploadBuilder::newInstance()
             ->setClient($this->client)
             ->setSource($this->source)
             ->setBucket($this->bucket)
@@ -39,16 +81,28 @@ class Upload implements \Tradesy\Innobackupex\SaveInterface
             ->build();
     }
 
+    /**
+     *
+     */
     public function cleanup()
     {
 
     }
 
+    /**
+     *
+     */
     public function verify()
     {
 
     }
-    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename){
+
+    /**
+     * @param Info $info
+     * @param $filename
+     */
+    public function saveBackupInfo(Info $info, $filename)
+    {
         $serialized = serialize($info);
 
         $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
@@ -60,6 +114,7 @@ class Upload implements \Tradesy\Innobackupex\SaveInterface
         echo $response->stderr();
 
     }
+
     /**
      * @param mixed $key
      */

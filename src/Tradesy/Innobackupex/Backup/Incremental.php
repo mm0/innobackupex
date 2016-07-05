@@ -12,8 +12,11 @@ class Incremental extends AbstractBackup
      * @var string
      */
     protected $save_directory_prefix = "full_backup_";
-    
-    public function PerformBackup()
+
+    /**
+     * Begin the backup.
+     */
+    public function performBackup()
     {
         /*
          * If there are incrementals, use the directory returned by array_pop,
@@ -35,38 +38,42 @@ class Incremental extends AbstractBackup
                 $this->BackupInfo->getLatestIncrementalBackup());
 
         $this->decryptAndDecompressBackups([$basedir]);
-        
+
         $command = "innobackupex " .
             " --user=" . $user .
             " --password=" . $password .
             " --host=" . $host .
             " --port=" . $port .
-            " --parallel 100" .
+            " --parallel " . $this->parallel_threads .
             " --no-timestamp" .
             ($this->getCompress() ?
                 " --compress  --compress-threads=" . $this->compress_threads : "") .
             (($this->getEncryptionConfiguration() instanceof $enc_class) ?
                 $this->getEncryptionConfiguration()->getConfigurationString() .
-                " --encrypt-threads=" . $this->encrypt_threads : "" ).
+                " --encrypt-threads=" . $this->encrypt_threads : "") .
             " --incremental " .
             $this->getFullPathToBackup() .
             " --incremental-basedir=" .
             $basedir;
-        echo "Backup Command: $command \n";
+
+        $this->logTrace("Backup Command: $command");
         $response = $this->getConnection()->executeCommand($command);
 
-        echo $response->stdout() . "\n";
-        echo $response->stderr() . "\n";
+        $this->logDebug($response->stdout());
+        $this->logError($response->stderr());
     }
 
-    public function SaveBackupInfo()
+    /**
+     * Save Backup Information to base backup directory for use by later incremental backups and restoration.
+     */
+    public function saveBackupInfo()
     {
-        echo "Backup info save to home directory\n";
+        $this->logTrace("Backup info saved to home directory");
         $this->BackupInfo->addIncrementalBackup(
-            $this->getRelativebackupdirectory()
+            $this->getRelativeBackupDirectory()
         );
         $this->writeFile(
-            $this->getBasebackupDirectory() . DIRECTORY_SEPARATOR . 
+            $this->getBaseBackupDirectory() . DIRECTORY_SEPARATOR .
             $this->getBackupInfoFilename(),
             serialize($this->BackupInfo), 0644
         );

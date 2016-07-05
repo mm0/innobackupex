@@ -2,14 +2,17 @@
 
 namespace Tradesy\Innobackupex\GCS\Remote;
 
+use Tradesy\Innobackupex\LoggingTraits;
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\SaveInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
 use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
 
-class Upload implements SaveInterface {
-
+class Upload implements SaveInterface
+{
+    use LoggingTraits;
+    
     protected $connection;
     protected $bucket;
     protected $region;
@@ -34,29 +37,31 @@ class Upload implements SaveInterface {
         $region,
         $remove_file_after_upload = false,
         $concurrency = 10
-    ){
-        $this->connection               = $connection;
-        $this->bucket                   = $bucket;
-        $this->region                   = $region;
-        $this->concurrency              = $concurrency;
+    ) {
+        $this->connection = $connection;
+        $this->bucket = $bucket;
+        $this->region = $region;
+        $this->concurrency = $concurrency;
         $this->testSave();
     }
+
     public function testSave()
     {
         $command = "which " . $this->binary;
         $response = $this->connection->executeCommand($command);
-        if(strlen($response->stdout()) == 0 
-            || preg_match("/not found/i", $response->stdout())){
+        if (strlen($response->stdout()) == 0
+            || preg_match("/not found/i", $response->stdout())
+        ) {
             throw new CLINotFoundException(
                 $this->binary . " CLI not installed.",
                 0
             );
         }
         $command = $this->binary .
-                    " ls | grep -c " . $this->bucket;
+            " ls | grep -c " . $this->bucket;
         echo $command;
         $response = $this->connection->executeCommand($command);
-        if(intval($response->stdout())==0){
+        if (intval($response->stdout()) == 0) {
             throw new BucketNotFoundException(
                 "GCS bucket (" . $this->bucket . ")  not found. ",
                 0
@@ -70,7 +75,7 @@ class Upload implements SaveInterface {
         // -m option for parallel
         $command = $this->binary .
             " -m rsync -r  $filename gs://" .
-            $this->bucket . "/" . 
+            $this->bucket . "/" .
             $this->key;
         echo $command;
         $response = $this->connection->executeCommand(
@@ -80,6 +85,7 @@ class Upload implements SaveInterface {
         echo $response->stderr();
 
     }
+
     public function cleanup()
     {
         /* $command = "sudo rm -f " . $this->getFullPathToBackup();
@@ -89,16 +95,17 @@ class Upload implements SaveInterface {
         */
     }
 
-    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename){
+    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename)
+    {
         // create temp file
         $response = $this->connection->executeCommand("mktemp", true);
         $file = rtrim($response->stdout());
         $serialized = serialize($info);
 
         $response = $this->connection->writeFileContents("$file", $serialized);
-        $command = $this->binary . 
+        $command = $this->binary .
             " cp $file gs://" . $this->bucket .
-            DIRECTORY_SEPARATOR.
+            DIRECTORY_SEPARATOR .
             "$filename";
         echo "Upload latest backup info to GCS with command: $command \n";
 
@@ -120,6 +127,7 @@ class Upload implements SaveInterface {
     {
 
     }
+
     /**
      * @param mixed $key
      */

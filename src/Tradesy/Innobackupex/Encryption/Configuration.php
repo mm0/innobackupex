@@ -1,7 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: matt
+ * Created by Matt Margolin
  * Date: 3/23/16
  * Time: 2:04 PM
  * Reference: https://www.percona.com/doc/percona-xtrabackup/2.2/innobackupex/encrypted_backups_innobackupex.html
@@ -9,6 +8,8 @@
 
 namespace Tradesy\Innobackupex\Encryption;
 
+use Tradesy\Innobackupex\Exceptions\EncryptionAlgorithmNotSupportedException;
+use Tradesy\Innobackupex\Exceptions\InvalidEncryptionKeyTypeException;
 
 /**
  * Class Configuration
@@ -16,18 +17,20 @@ namespace Tradesy\Innobackupex\Encryption;
  */
 class Configuration
 {
-
     /**
      * @var string
      */
     protected $algorithm;
+    
     /**
      * @var string
      */
     protected $encryption_key;
+    
     /*
      * TODO: Encryption key file support
      */
+    
     /**
      * @var string
      */

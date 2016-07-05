@@ -2,15 +2,28 @@
 
 namespace Tradesy\Innobackupex\Exceptions;
 
-
+/**
+ * Class InnobackupexException
+ * @package Tradesy\Innobackupex\Exceptions
+ */
 class InnobackupexException extends \Exception
 {
-    public function __construct($message, $code = 0, \Exception $previous = null) {
-
+    /**
+     * InnobackupexException constructor.
+     * @param string $message
+     * @param int $code
+     * @param \Exception|null $previous
+     */
+    public function __construct($message, $code = 0, \Exception $previous = null)
+    {
         parent::__construct($message, $code, $previous);
     }
 
-    public function __toString() {
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
         return __CLASS__ . ": [{$this->code}]: {$this->message}\n";
     }
 

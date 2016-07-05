@@ -1,14 +1,12 @@
 <?php
 
 /*
- *
  *  @link http://www.percona.com/doc/percona-xtrabackup/2.1/innobackupex/incremental_backups_innobackupex.html
- *
- *
- *
  */
 namespace Tradesy\Innobackupex\Restore;
 
+use Tradesy\Innobackupex\Backup\Info;
+use Tradesy\Innobackupex\LoadInterface;
 use Tradesy\Innobackupex\MySQL\Configuration;
 use Tradesy\Innobackupex\Encryption\Configuration as EncryptionConfiguration;
 use Tradesy\Innobackupex\ConnectionInterface;
@@ -23,6 +21,7 @@ class Mysql
     use \Tradesy\Innobackupex\Traits;
 
     /**
+     * TODO: is there a better way to determine the backup has been prepared?
      * @var string
      */
     protected $prepare_flag_file = "already_prepared";
@@ -39,7 +38,7 @@ class Mysql
      */
     protected $compressed;
     /**
-     * @var \Tradesy\Innobackupex\Backup\Info
+     * @var Info
      */
     protected $BackupInfo;
     /**
@@ -52,7 +51,7 @@ class Mysql
      */
     protected $encryption_configuration;
     /**
-     * @var \Tradesy\Innobackupex\LoadInterface[]
+     * @var LoadInterface[]
      */
     protected $load_modules;
     /**
@@ -67,6 +66,7 @@ class Mysql
      * @var int
      */
     protected $parallel_threads;
+
     /**
      * Restore constructor.
      * @param Configuration $mysql_configuration
@@ -101,22 +101,25 @@ class Mysql
      * @param $directory
      * @return bool
      */
-    public function directoryOrFileExists($directory){
-        if($this->getConnection()->file_exists($directory)){
+    public function directoryOrFileExists($directory)
+    {
+        if ($this->getConnection()->file_exists($directory)) {
             return true;
         }
+
         return false;
     }
 
     /**
      * @param $directory
      */
-    public function loadBackupDirectory($directory){
+    public function loadBackupDirectory($directory)
+    {
         $base_dir = $this->BackupInfo->getBaseBackupDirectory();
         $full_dir = $base_dir . DIRECTORY_SEPARATOR . $directory;
-        if($this->directoryOrFileExists($full_dir)){
-            echo " full directory found " .$full_dir . "\n";
-        }else{
+        if ($this->directoryOrFileExists($full_dir)) {
+            $this->logTrace(" full directory found " . $full_dir);
+        } else {
             // use loadmodules to restore this backup
             $this->loadBackupDirectoryFromModules($directory);
         }
@@ -125,13 +128,18 @@ class Mysql
     /**
      * @param $directory
      */
-    public function loadBackupDirectoryFromModules($directory){
-        foreach($this->load_modules as $module){
+    public function loadBackupDirectoryFromModules($directory)
+    {
+        foreach ($this->load_modules as $module) {
             $module->load($this->BackupInfo, $directory);
-            if($this->directoryOrFileExists($this->BackupInfo->getBaseBackupDirectory() .
+
+            // don't proceed to next module since already loaded
+            if ($this->directoryOrFileExists($this->BackupInfo->getBaseBackupDirectory() .
                 DIRECTORY_SEPARATOR .
-                $directory)) // don't proceed to next module since already loaded
+                $directory)
+            ) {
                 break;
+            }
         }
     }
 
@@ -141,7 +149,7 @@ class Mysql
     public function runRestore()
     {
         $base_dir = $this->BackupInfo->getBaseBackupDirectory();
-        
+
         // First Check if /var/lib/mysql exists, otherwise script would fail at end
         if ($this->getConnection()->file_exists($this->getMysqlConfiguration()->getDataDirectory())) {
             throw new MySQLDirectoryExistsException(
@@ -163,24 +171,24 @@ class Mysql
          * Ensure backups are present on server
          *  by this point by attempting to download via load_modules unless already present
          */
-        foreach($dirs as $dir){
+        foreach ($dirs as $dir) {
             $this->loadBackupDirectory($dir);
         }
         // add base directory prefix to path
-        foreach($dirs as $dir){
+        foreach ($dirs as $dir) {
             $full_dirs[] = $base_dir . DIRECTORY_SEPARATOR . $dir;
         }
         /*
          * Set owner of directories recursively
          */
-        foreach($full_dirs as $dir){
-            $this->getConnection()->executeCommand('chown -R '. $dir);
+        foreach ($full_dirs as $dir) {
+            $this->getConnection()->executeCommand('chown -R ' . $dir);
         }
         /*
          * Decrypt and decompress if necessary
          */
         $this->decryptAndDecompressBackups($full_dirs);
-        
+
         /*
          * Apply log to full backup first with --redo-only flag
          */
@@ -204,16 +212,16 @@ class Mysql
 
         /*
          * Finally Copy Back the directory
-         */ 
-        echo "Copying Back mysql backup\n";
-        $this->CopyBack($base_dir . DIRECTORY_SEPARATOR . $this->BackupInfo->getLatestFullBackup());
+         */
+        $this->logTrace("Copying Back mysql backup");
+        $this->copyBack($base_dir . DIRECTORY_SEPARATOR . $this->BackupInfo->getLatestFullBackup());
 
         /*
          * Don't forget to chown the directory
          */
-        echo "Chowning mysql directory \n";
+        $this->logTrace("Chowning mysql directory");
         $this->ChownDirectory();
-        
+
         /*
          * The end.
          */
@@ -233,7 +241,7 @@ class Mysql
      */
     protected function MarkDirectoryAsPrepared($directory)
     {
-        echo "writing $directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file";
+        $this->logTrace("writing $directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file");
         $this->getConnection()->writeFileContents($directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file, "");
     }
 
@@ -248,14 +256,17 @@ class Mysql
         $base_backup_dir = $this->BackupInfo->getBaseBackupDirectory();
         $full_backup_full_path = $base_backup_dir . DIRECTORY_SEPARATOR . $base_dir;
         $inc_backup_full_path = $base_backup_dir . DIRECTORY_SEPARATOR . $inc_dir;
-        if($inc_dir == ""
-            && $this->IsDirectoryAlreadyPrepared($full_backup_full_path)){
+        if ($inc_dir == ""
+            && $this->IsDirectoryAlreadyPrepared($full_backup_full_path)
+        ) {
             // full backup and already prepared
-            echo "\nfull backup and already prepared\n";
+            $this->logDebug("full backup and already prepared");
+
             return;
         }
-        if($inc_dir != "" && $this->IsDirectoryAlreadyPrepared($inc_backup_full_path)){
-            echo "\n incremental backup and already prepared\n";
+        if ($inc_dir != "" && $this->IsDirectoryAlreadyPrepared($inc_backup_full_path)) {
+            $this->logDebug(" incremental backup and already prepared");
+
             return;
         }
         $command = "innobackupex " .
@@ -267,33 +278,34 @@ class Mysql
                 ? " --incremental-dir=" . $inc_backup_full_path
                 : "");
 
-        echo "Backup Command: $command \n";
+        $this->logTrace("Backup Command: $command");
         $response = $this->connection->executeCommand(
-            $command, true
+            $command,
+            true
         );
 
-        echo $response->stdout() . "\n";
-        echo $response->stderr() . "\n";
+        $this->logTrace($response->stdout());
+        $this->logError($response->stderr());
         // Mark backup
-        echo "Marking backup as already prepared \n";
-        $this->MarkDirectoryAsPrepared((strlen($inc_dir)? $inc_backup_full_path : $full_backup_full_path));
+        $this->logTrace("Marking backup as already prepared");
+        $this->MarkDirectoryAsPrepared((strlen($inc_dir) ? $inc_backup_full_path : $full_backup_full_path));
     }
 
     /**
      * @param string $base_dir
      */
-    protected function CopyBack($base_dir)
+    protected function copyBack($base_dir)
     {
         $command = "innobackupex" .
             " --copy-back $base_dir ";
 
-        echo "Running Command: " . $command . "\n";
+        $this->logTrace("Running Command: " . $command);
         $response = $this->getConnection()->executeCommand($command);
 
-        echo $response->stdout() . "\n";
-        echo $response->stderr() . "\n";
+        $this->logTrace($response->stdout());
+        $this->logError($response->stderr());
     }
-    
+
     protected function ChownDirectory()
     {
         $command = "chown -R " .
@@ -307,12 +319,12 @@ class Mysql
 
         $response = $this->getConnection()->executeCommand($command);
 
-        echo $response->stdout() . "\n";
-        echo $response->stderr() . "\n";
+        $this->logTrace($response->stdout());
+        $this->logError($response->stderr());
     }
 
     /**
-     * @return \Tradesy\Innobackupex\Backup\Info
+     * @return Info
      */
     public function fetchBackupInfo()
     {

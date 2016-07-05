@@ -2,11 +2,13 @@
 
 namespace Tradesy\Innobackupex\Backup;
 
+use Tradesy\Innobackupex\Backup\Info;
 use Tradesy\Innobackupex\MySQL\Configuration;
 use Tradesy\Innobackupex\Encryption\Configuration as EncryptionConfiguration;
 use Tradesy\Innobackupex\ConnectionInterface;
 use Tradesy\Innobackupex\Exceptions\InnobackupexException;
 use Tradesy\Innobackupex\SaveInterface;
+use Tradesy\Innobackupex\Traits;
 
 /**
  * Class AbstractBackup
@@ -14,7 +16,7 @@ use Tradesy\Innobackupex\SaveInterface;
  */
 abstract class AbstractBackup
 {
-    use \Tradesy\Innobackupex\Traits;
+    use Traits;
 
     /**
      * @var string
@@ -56,7 +58,7 @@ abstract class AbstractBackup
      */
     protected $connection;
     /**
-     * @var \Tradesy\Innobackupex\SaveInterface[]
+     * @var SaveInterface[]
      */
     protected $save_modules;
     /**
@@ -82,26 +84,9 @@ abstract class AbstractBackup
      */
     protected $backup_info_filename = "tradesy_percona_backup_info";
     /**
-     * @var \Tradesy\Innobackupex\Backup\Info
+     * @var Info
      */
     protected $BackupInfo;
-
-    /**
-     * @return Info
-     */
-    public function getBackupInfo()
-    {
-        return $this->BackupInfo;
-    }
-
-    /**
-     * @param Info $BackupInfo
-     */
-    public function setBackupInfo($BackupInfo)
-    {
-        $this->BackupInfo = $BackupInfo;
-    }
-
 
     /**
      * AbstractBackup constructor.
@@ -110,6 +95,9 @@ abstract class AbstractBackup
      * @param SaveInterface[] $save_module
      * @param EncryptionConfiguration $enc_config
      * @param bool $compress
+     * @param int $compress_threads
+     * @param int $parallel_threads
+     * @param int $encrypt_threads
      * @param string $memory
      * @param string $base_backup_directory
      * @param string $save_directory_prefix
@@ -121,7 +109,7 @@ abstract class AbstractBackup
         EncryptionConfiguration $enc_config = null,
         $compress = false,
         $compress_threads = 100,
-        $paralle_threads = 100,
+        $parallel_threads = 100,
         $encrypt_threads = 100,
         $memory = "1G",
         $base_backup_directory = "/tmp",
@@ -133,7 +121,7 @@ abstract class AbstractBackup
         $this->encryption_configuration = $enc_config;
         $this->compress = $compress;
         $this->compress_threads = $compress_threads;
-        $this->parallel_threads = $paralle_threads;
+        $this->parallel_threads = $parallel_threads;
         $this->encrypt_threads = $encrypt_threads;
         $this->memory = $memory;
         $this->base_backup_directory = $base_backup_directory;
@@ -158,7 +146,6 @@ abstract class AbstractBackup
         $this->backup_info_filename = $backup_info_filename;
     }
 
-
     /**
      * @return string
      */
@@ -175,13 +162,12 @@ abstract class AbstractBackup
         $this->save_directory_prefix = $save_directory_prefix;
     }
 
-
     /**
      * @return mixed
      */
     public function getFullPathToBackup()
     {
-        return $this->getBasebackupDirectory() . DIRECTORY_SEPARATOR . $this->getRelativebackupdirectory();
+        return $this->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $this->getRelativeBackupDirectory();
     }
 
 
@@ -205,19 +191,18 @@ abstract class AbstractBackup
     /**
      * @return string
      */
-    public function getRelativebackupdirectory()
+    public function getRelativeBackupDirectory()
     {
         return $this->relative_backup_directory;
     }
-    
+
     /**
      * @return mixed
      */
-    public function getBasebackupDirectory()
+    public function getBaseBackupDirectory()
     {
         return $this->base_backup_directory;
     }
-
 
     /**
      * @return boolean
@@ -234,7 +219,6 @@ abstract class AbstractBackup
     {
         $this->compress = $compress;
     }
-
 
     /**
      * @return ConnectionInterface
@@ -261,7 +245,8 @@ abstract class AbstractBackup
     }
 
     /**
-     * @return mixed
+     * timestamp
+     * @return int
      */
     public function getStartDate()
     {
@@ -269,7 +254,8 @@ abstract class AbstractBackup
     }
 
     /**
-     * @param mixed $start_date
+     * timestamp
+     * @param int $start_date
      */
     public function setStartDate($start_date)
     {
@@ -277,7 +263,8 @@ abstract class AbstractBackup
     }
 
     /**
-     * @return mixed
+     * timestamp
+     * @return int
      */
     public function getEndDate()
     {
@@ -285,29 +272,39 @@ abstract class AbstractBackup
     }
 
     /**
-     * @param mixed $end_date
+     * timestamp
+     * @param int $end_date
      */
     public function setEndDate($end_date)
     {
         $this->end_date = $end_date;
     }
 
+    /**
+     * Sets start time using current timestamp
+     * Sets Relative Backup Directory
+     */
     public function start()
     {
         $this->setStartDate(time());
-        $this->setRelativebackupdirectory();
-        echo "\nStarting Backup: " . date("F j, Y, g:i a", $this->getStartDate()) . "\n";
+        $this->setRelativeBackupDirectory();
+        $this->logTrace("Starting Backup: " . date("F j, Y, g:i a", $this->getStartDate()));
     }
 
+    /**
+     * Sets end time using current timestamp
+     */
     public function end()
     {
         $this->setEndDate(time());
-        echo "\nBackup Finished: " . date("F j, Y, g:i a", $this->getEndDate()) . "\n";
+        $this->logTrace("Backup Finished: " . date("F j, Y, g:i a", $this->getEndDate()));
 
     }
 
-
-    public function test_innobackupex_exist()
+    /**
+     * @throws InnobackupexException
+     */
+    public function checkInnobackupexBinaryInstalled()
     {
         $response = $this->connection->executeCommand(
             "which innobackupex"
@@ -322,26 +319,26 @@ abstract class AbstractBackup
                 0
             );
         } else {
-            echo 'Innobackupex located: ' . $response->stdout() . "\n";
+            $this->logTrace('Innobackupex located: ' . $response->stdout() . "\n");
         }
     }
-    
 
 
+    /**
+     * @throws InnobackupexException
+     */
     public function Backup()
     {
-        $this->test_innobackupex_exist();
+        $this->checkInnobackupexBinaryInstalled();
         $this->start();
-        $this->PerformBackup();
-        $this->SaveBackupInfo();
-        //  $this->ApplyLog();
-        echo "Saved to " . $this->getFullPathToBackup() . "\n";
+        $this->performBackup();
+        $this->saveBackupInfo();
+        $this->logTrace("Saved to " . $this->getFullPathToBackup() . "\n");
         foreach ($this->save_modules as $saveModule) {
-
             $saveModule->setKey(
                 $this->BackupInfo->getRepositoryBaseName() .
                 DIRECTORY_SEPARATOR .
-                $this->getRelativebackupdirectory()
+                $this->getRelativeBackupDirectory()
             );
             $saveModule->save($this->getFullPathToBackup());
             /*
@@ -350,24 +347,32 @@ abstract class AbstractBackup
             $saveModule->saveBackupInfo($this->BackupInfo, $this->getBackupInfoFilename());
             $saveModule->cleanup();
         }
-        $this->PostHook();
+        $this->postHook();
         $this->end();
     }
 
+    /**
+     * @param $dest
+     * @param $contents
+     * @param int $mode
+     */
     public function writeFile($dest, $contents, $mode = 0644)
     {
         $this->connection->writeFileContents($dest, $contents, $mode);
     }
 
+    /**
+     * @return Info
+     */
     public function fetchBackupInfo()
     {
-        $remote_file = $this->getBasebackupDirectory() . DIRECTORY_SEPARATOR .
+        $remote_file = $this->getBaseBackupDirectory() . DIRECTORY_SEPARATOR .
             $this->getBackupInfoFilename();
         if ($this->getConnection()->file_exists($remote_file)) {
             $file_contents = $this->getConnection()->getFileContents($remote_file);
-            echo $file_contents;
+            $this->logTrace($file_contents);
             $this->BackupInfo = unserialize($file_contents);
-            var_dump($this->BackupInfo);
+            $this->logTrace($this->BackupInfo);
         } else {
             $this->BackupInfo = new Info();
         }
@@ -375,16 +380,46 @@ abstract class AbstractBackup
         return $this->BackupInfo;
     }
 
-    protected function PostHook()
+    /**
+     *
+     */
+    protected function postHook()
     {
 
     }
-    protected function setRelativebackupdirectory()
+
+    /**
+     * Sets backup directory using SaveDirectoryPrefix and start date
+     */
+    protected function setRelativeBackupDirectory()
     {
         $this->relative_backup_directory = $this->getSaveDirectoryPrefix() .
             date("m-j-Y--H-i-s", $this->getStartDate());
     }
-    abstract function SaveBackupInfo();
 
-    abstract function PerformBackup();
+    /**
+     * @return Info
+     */
+    public function getBackupInfo()
+    {
+        return $this->BackupInfo;
+    }
+
+    /**
+     * @param Info $BackupInfo
+     */
+    public function setBackupInfo(Info $BackupInfo)
+    {
+        $this->BackupInfo = $BackupInfo;
+    }
+
+    /**
+     * @return void
+     */
+    abstract public function saveBackupInfo();
+
+    /**
+     * @return void
+     */
+    abstract public function performBackup();
 }

@@ -1,14 +1,18 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: matt
+ * Created by Matt Margolin.
  * Date: 3/28/16
  * Time: 1:29 PM
  */
 namespace Tradesy\Innobackupex;
 
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
 trait Traits
 {
+    use LoggingTraits;
+    
     function decryptAndDecompressBackups($backups)
     {
         $class = "\Tradesy\Innobackupex\Encryption\Configuration";
@@ -17,7 +21,7 @@ trait Traits
             $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "");
 
         foreach ($backups as $basedir) {
-            echo "\n\n PROCESSING: " . $basedir . " \n\n\n";
+            $this->logTrace("\n\n PROCESSING: " . $basedir . " \n\n\n");
             /*
              * Next we have to check if files are encrpyted,
              */
@@ -31,21 +35,14 @@ trait Traits
                     $decryption_string .
                     " --parallel " . $this->parallel_threads .
                     " $basedir";
-                echo "Decrypting command: " . $command;
+                $this->logTrace( "Decrypting command: " . $command);
                 $response = $this->getConnection()->executeCommand($command,true);
 
-                echo $response->stdout() . "\n";
-                echo $response->stderr() . "\n";
+                $this->logTrace($response->stdout() . "\n");
+                $this->logTrace($response->stderr() . "\n");
             }
-            /*
-             * Now if compressed, decompress
-             * xtrabackup_checkpoints doesn't get compressed, so check with different file
-             * such as xtrabackup_info
-             */
 
-            $xtrabackup_file = $basedir . DIRECTORY_SEPARATOR . "xtrabackup_info";
-
-
+            // If compressed, decompress
             if ($this->decompressionRequired($basedir)
             ) {
                 $command = "innobackupex " .
@@ -107,7 +104,7 @@ trait Traits
     }
 
     /**
-     * @return Configuration
+     * @return MySQL\Configuration
      */
     public function getMysqlConfiguration()
     {
@@ -115,15 +112,15 @@ trait Traits
     }
 
     /**
-     * @param Configuration $mysql_configuration
+     * @param MySQL\Configuration $mysql_configuration
      */
-    public function setMysqlConfiguration($mysql_configuration)
+    public function setMysqlConfiguration(MySQL\Configuration $mysql_configuration)
     {
         $this->mysql_configuration = $mysql_configuration;
     }
 
     /**
-     * @return \Tradesy\Innobackupex\Backup\Info
+     * @return Backup\Info
      */
     public function getBackupInfo()
     {
@@ -131,15 +128,15 @@ trait Traits
     }
 
     /**
-     * @param \Tradesy\Innobackupex\Backup\Info $BackupInfo
+     * @param Backup\Info $BackupInfo
      */
-    public function setBackupInfo($BackupInfo)
+    public function setBackupInfo(Backup\Info $BackupInfo)
     {
         $this->BackupInfo = $BackupInfo;
     }
 
     /**
-     * @return EncryptionConfiguration
+     * @return Encryption\Configuration
      */
     public function getEncryptionConfiguration()
     {
@@ -147,9 +144,9 @@ trait Traits
     }
 
     /**
-     * @param EncryptionConfiguration $encryption_configuration
+     * @param Encryption\Configuration $encryption_configuration
      */
-    public function setEncryptionConfiguration($encryption_configuration)
+    public function setEncryptionConfiguration(Encryption\Configuration $encryption_configuration)
     {
         $this->encryption_configuration = $encryption_configuration;
     }

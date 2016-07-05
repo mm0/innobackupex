@@ -2,6 +2,8 @@
 
 namespace Tradesy\Innobackupex\S3\Local;
 
+use Tradesy\Innobackupex\Backup\Info;
+use Tradesy\Innobackupex\LoggingTraits;
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
@@ -9,19 +11,36 @@ use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
 use \Aws\S3\S3Client;
 
+/**
+ * Class Download
+ * @package Tradesy\Innobackupex\S3\Local
+ */
 class Download implements LoadInterface
 {
-
+    use LoggingTraits;
     /**
-     * @var \Aws\S3\S3Client
+     * @var S3Client
      */
     protected $client;
-
+    /**
+     * @var ConnectionInterface
+     */
     protected $connection;
+    /**
+     * @var string
+     */
     protected $bucket;
+    /**
+     * @var string
+     */
     protected $region;
-    protected $source;
+    /**
+     * @var
+     */
     protected $key;
+    /**
+     * @var int
+     */
     protected $concurrency;
 
     /**
@@ -50,6 +69,9 @@ class Download implements LoadInterface
 
     }
 
+    /**
+     * @throws BucketNotFoundException
+     */
     public function testSave()
     {
         if (!$this->client->doesBucketExist($this->bucket)) {
@@ -62,7 +84,11 @@ class Download implements LoadInterface
 
     }
 
-    public function load(\Tradesy\Innobackupex\Backup\Info $info, $filename)
+    /**
+     * @param Info $info
+     * @param $filename
+     */
+    public function load(Info $info, $filename)
     {
         //$filename = $info->getLatestFullBackup();
         echo "downloading $filename\n\n";
@@ -85,10 +111,16 @@ class Download implements LoadInterface
         return;
     }
 
+    /**
+     *
+     */
     public function cleanup()
     {
     }
 
+    /**
+     * @param $backup_info_filename
+     */
     public function getBackupInfo($backup_info_filename)
     {
 
@@ -98,6 +130,9 @@ class Download implements LoadInterface
 
     }
 
+    /**
+     *
+     */
     public function verify()
     {
 

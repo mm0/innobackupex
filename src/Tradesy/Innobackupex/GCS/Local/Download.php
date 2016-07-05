@@ -2,6 +2,7 @@
 
 namespace Tradesy\Innobackupex\GCS\Local;
 
+use Tradesy\Innobackupex\Backup\Info;
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
@@ -9,6 +10,10 @@ use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
 use \Google;
 
+/**
+ * Class Download
+ * @package Tradesy\Innobackupex\GCS\Local
+ */
 class Download implements LoadInterface
 {
 
@@ -17,11 +22,29 @@ class Download implements LoadInterface
      */
     protected $client;
 
+    /**
+     * @var ConnectionInterface
+     */
     protected $connection;
+    /**
+     * @var
+     */
     protected $bucket;
+    /**
+     * @var
+     */
     protected $region;
+    /**
+     * @var
+     */
     protected $source;
+    /**
+     * @var
+     */
     protected $key;
+    /**
+     * @var int
+     */
     protected $concurrency;
 
     /**
@@ -51,6 +74,9 @@ class Download implements LoadInterface
 
     }
 
+    /**
+     * @throws BucketNotFoundException
+     */
     public function testSave()
     {
         if (!$this->client->doesBucketExist($this->bucket)) {
@@ -63,14 +89,18 @@ class Download implements LoadInterface
 
     }
 
-    public function load(\Tradesy\Innobackupex\Backup\Info $info, $filename)
+    /**
+     * @param Info $info
+     * @param $filename
+     */
+    public function load(Info $info, $filename)
     {
         //$filename = $info->getLatestFullBackup();
         echo "downloading $filename\n\n";
         echo "saving to: "  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR  ."\n\n";
         $service = new \Google_Service_Storage($this->client);
         $object = $service->objects->get( $this->bucket, $filename )->;
-        $request = new Google_Http_Request($object['mediaLink'], 'GET');
+        $request = new \Google_Http_Request($object['mediaLink'], 'GET');
         $signed_request = $this->client->getAuth()->sign($request);
         $http_request = $this->client->getIo()->makeRequest($signed_request);
         echo $http_request->getResponseBody();
@@ -88,19 +118,28 @@ class Download implements LoadInterface
             ]);
     }
 
+    /**
+     *
+     */
     public function cleanup()
     {
     }
 
+    /**
+     * @param $backup_info_filename
+     */
     public function getBackupInfo($backup_info_filename)
     {
 
-        $response = $this->connection->executeCommand($command);
+        /*$response = $this->connection->executeCommand($command);
         echo $response->stdout();
-        echo $response->stderr();
+        echo $response->stderr();*/
 
     }
 
+    /**
+     *
+     */
     public function verify()
     {
 

@@ -2,9 +2,11 @@
 
 namespace Tradesy\Innobackupex\SSH;
 
+use Tradesy\Innobackupex\ConnectionInterface;
 use Tradesy\Innobackupex\Exceptions\SSH2AuthenticationException;
 use Tradesy\Innobackupex\Exceptions\ServerNotListeningException;
 use Tradesy\Innobackupex\Exceptions\SSH2ConnectionException;
+use Tradesy\Innobackupex\LoggingTraits;
 
 /**
  * Class Connection
@@ -12,6 +14,8 @@ use Tradesy\Innobackupex\Exceptions\SSH2ConnectionException;
  */
 class Connection implements ConnectionInterface
 {
+    use LoggingTraits;
+    
     /**
      * @var Configuration
      */
@@ -25,16 +29,28 @@ class Connection implements ConnectionInterface
      */
     protected $connection;
 
-    function __construct(Configuration $config)
+    /**
+     * Connection constructor.
+     * @param Configuration $config
+     */
+    public function __construct(Configuration $config)
     {
         $this->config = $config;
     }
 
-    protected function verify(){
+    /**
+     * @throws ServerNotListeningException
+     */
+    public  function verify(){
         $this->verifySSHServerListening();
         $this->verifyConnection();
     }
 
+    /**
+     * @param bool $force_reconnect
+     * @return resource
+     * @throws SSH2ConnectionException
+     */
     function getConnection($force_reconnect = false)
     {
         if ($this->authenticated && !$force_reconnect) {
@@ -56,6 +72,10 @@ class Connection implements ConnectionInterface
         return $this->connection;
     }
 
+    /**
+     * @throws SSH2AuthenticationException
+     * @throws SSH2ConnectionException
+     */
     protected function verifyCredentials()
     {
 
@@ -76,6 +96,10 @@ class Connection implements ConnectionInterface
         }
     }
 
+    /**
+     * @return bool
+     * @throws ServerNotListeningException
+     */
     protected function verifySSHServerListening()
     {
         $serverConn = @stream_socket_client(
@@ -95,6 +119,9 @@ class Connection implements ConnectionInterface
         return true;
     }
 
+    /**
+     * @throws SSH2AuthenticationException
+     */
     protected function verifyConnection()
     {
         if ($this->authenticated) {

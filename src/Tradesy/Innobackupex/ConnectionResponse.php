@@ -2,13 +2,14 @@
 
 namespace Tradesy\Innobackupex;
 
-
 /**
  * Class ConnectionResponse
  * @package Tradesy\Innobackupex
  */
 class ConnectionResponse
 {
+    use LoggingTraits;
+
     /**
      * @var string
      */
@@ -40,6 +41,7 @@ class ConnectionResponse
     {
         return $this->command;
     }
+
     /**
      * @return int  The host.
      */
@@ -47,6 +49,7 @@ class ConnectionResponse
     {
         return $this->stdout;
     }
+
     /**
      * @return string  The username.
      */
@@ -55,5 +58,10 @@ class ConnectionResponse
         return $this->stderr;
     }
 
+    public function showOutput()
+    {
+        $this->logTrace($this->stdout());
+        $this->logError($this->stderr());
+    }
 
 }

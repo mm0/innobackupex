@@ -3,28 +3,72 @@
 namespace Tradesy\Innobackupex\GCS\Local;
 
 
-class Upload implements \Tradesy\Innobackupex\SaveInterface
-{
+use Tradesy\Innobackupex\SaveInterface;
+use \Google;
 
+/**
+ * Class Upload
+ * @package Tradesy\Innobackupex\GCS\Local
+ */
+class Upload implements SaveInterface
+{
+    /**
+     * @var ConnectionInterface
+     */
+    protected $connection;
+    /**
+     * @var
+     */
     protected $bucket;
+    /**
+     * @var
+     */
     protected $region;
+    /**
+     * @var GCSClient
+     */
     protected $client;
+    /**
+     * @var
+     */
     protected $source;
+    /**
+     * @var
+     */
     protected $key;
+    /**
+     * @var int
+     */
     protected $concurrency;
+    /**
+     * @var string
+     */
     protected $binary = "gcloud";
 
-    public function __construct(GCSClient $client, $concurrency = 10)
+    /**
+     * Upload constructor.
+     * @param ConnectionInterface $connection
+     * @param GCSClient $client
+     * @param int $concurrency
+     */
+    public function __construct(ConnectionInterface $connection, GCSClient $client, $concurrency = 10)
     {
+        $this->connection = $connection;
         $this->client = $client;
         $this->concurrency = $concurrency;
     }
 
+    /**
+     *
+     */
     public function testSave()
     {
 
     }
 
+    /**
+     * @param string $filename
+     */
     public function save($filename)
     {
         $uploader = UploadBuilder::newInstance()
@@ -37,16 +81,28 @@ class Upload implements \Tradesy\Innobackupex\SaveInterface
             ->build();
     }
 
+    /**
+     *
+     */
     public function cleanup()
     {
 
     }
 
+    /**
+     *
+     */
     public function verify()
     {
 
     }
-    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename){
+
+    /**
+     * @param \Tradesy\Innobackupex\Backup\Info $info
+     * @param $filename
+     */
+    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename)
+    {
         $serialized = serialize($info);
 
         $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
@@ -58,6 +114,7 @@ class Upload implements \Tradesy\Innobackupex\SaveInterface
         echo $response->stderr();
 
     }
+
     /**
      * @param mixed $key
      */

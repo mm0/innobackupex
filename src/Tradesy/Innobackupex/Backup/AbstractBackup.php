@@ -81,6 +81,13 @@ abstract class AbstractBackup
      * @desc Filename to store serialized backup information
      */
     protected $backup_info_filename = "tradesy_percona_backup_info";
+
+    /**
+     * @var string
+     * @desc Filename to store serialized backup information for full backups
+     */
+    protected $full_backup_info_filename = "tradesy_percona_full_backup_info";
+
     /**
      * @var \Tradesy\Innobackupex\Backup\Info
      */
@@ -151,6 +158,14 @@ abstract class AbstractBackup
     }
 
     /**
+     * @return string
+     */
+    public function getFullBackupInfoFilename()
+    {
+        return $this->full_backup_info_filename;
+    }
+
+    /**
      * @param string $backup_info_filename
      */
     public function setBackupInfoFilename($backup_info_filename)
@@ -158,6 +173,13 @@ abstract class AbstractBackup
         $this->backup_info_filename = $backup_info_filename;
     }
 
+    /**
+     * @param string $full_backup_info_filename
+     */
+    public function setFullBackupInfoFilename($full_backup_info_filename)
+    {
+        $this->full_backup_info_filename = $full_backup_info_filename;
+    }
 
     /**
      * @return string
@@ -348,6 +370,12 @@ abstract class AbstractBackup
              * optionally store backup info with save modules
              */
             $saveModule->saveBackupInfo($this->BackupInfo, $this->getBackupInfoFilename());
+
+            if ($this instanceof Full) {
+                // Let's also save information for full backup
+                $saveModule->saveBackupInfo($this->BackupInfo, $this->getFullBackupInfoFilename());
+            }
+
             $saveModule->cleanup();
         }
         $this->PostHook();

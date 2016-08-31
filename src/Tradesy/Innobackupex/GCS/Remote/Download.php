@@ -53,7 +53,7 @@ class Download implements LoadInterface {
          * TODO: Check that credentials work
          */
         $command = $this->binary .
-            " ls | grep -c " . $this->bucket;
+            " ls -b gs://" . $this->bucket . " | grep -c " . $this->bucket;
         echo $command;
         $response = $this->connection->executeCommand($command);
         if(intval($response->stdout())==0){

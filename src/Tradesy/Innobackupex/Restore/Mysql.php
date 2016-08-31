@@ -94,7 +94,7 @@ class Mysql
         $this->parallel_threads = $parallel_threads;
         $this->encryption_configuration = $enc_config;
         $this->compressed = $compressed;
-        $this->memory = $memory;
+        $this->memory_limit = $memory;
     }
 
     /**

@@ -277,7 +277,7 @@ When ready, simply call the restore method.  All archives will be downloaded via
  
 ## License
 
-Copyright (c) 2016, Tradesy, Inc.
+Copyright (c) 2016, Matt Margolin
 
 All rights reserved.
 

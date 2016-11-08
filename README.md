@@ -144,7 +144,8 @@ $google_save_module = new \Tradesy\Innobackupex\GCS\Remote\Upload(
 
 Now that you have a  mysql configuration, connection, and save module objects, you are ready to create the Backup Object:
 
- ##### Full Backup Object
+#### Full Backup Object
+
 ```
  $Backup = new \Tradesy\Innobackupex\Backup\Full(
      $mysql_config,
@@ -160,14 +161,16 @@ Now that you have a  mysql configuration, connection, and save module objects, y
      $save_directory_prefix = "full_backup_"     // Specify prefix for the full backup name
  );
  
- ```
- to run the backup script, simply call: 
- ```
+```
+to run the backup script, simply call: 
+
+```
 $Backup->Backup();
 ```
+
 This stores a serialized PHP Object of type `\Tradesy\Innobackupex\Backup\Info` into the `$save_directory` with information about relevant incremental and full backups for later use by the restoration process or additional incremental backups
 
- ##### Incremental Backup
+#### Incremental Backup
  
  Create the `Incremental` object
  
@@ -195,18 +198,18 @@ Load the previous Backup Info serialized file
  $info = $Backup->fetchBackupInfo();
  
 
- ```
+```
  
- ##### Create the Backup
- ```
+#### Create the Backup
+```
  /*
   *   Create the backup
   */
  $Backup->Backup();
- ```
+```
  
  
- ## Restoring from Backups
+## Restoring from Backups
  Please be sure to only run this when necessary and likely, on a non-production server as it will erase all existing MySQL Data.
  
  The restoration process looks something like this:
@@ -219,9 +222,11 @@ Load the previous Backup Info serialized file
  All of this is automated for your via our Restoration Configuration, Connection and Restore Modules:
  
 Load Backup Info Object from disk 
+
 ```
  $BackupInfo = unserialize($connection->getFileContents("/tmp/backups/tradesy_percona_backup_info"));
- ```
+```
+
 Use the same $mysql_config object as before.
 
 Use localshell connection for fastest restoration:
@@ -241,6 +246,7 @@ $aws_restore_module = new \Tradesy\Innobackupex\S3\Local\Download(
     $concurrency
 );
 ```
+
 Create the Restore Object
 
 ```
@@ -258,21 +264,21 @@ Create the Restore Object
 
 When ready, simply call the restore method.  All archives will be downloaded via the restore modules and prepared automatically.  Additionally, the method will restore the database.
  
- ```
+```
  $Restore->runRestore();
- ```
+```
  
- #### Sample Crontab
- ```
- # MySQL Backups
- # daily full backup at 12:15 am
- 15 0 * * * /usr/bin/php /var/cli/mysql_backups/CreateFullBackup.php >> /var/log/cron/mysql_backups.log 2>&1
+#### Sample Crontab
+```
+# MySQL Backups
+# daily full backup at 12:15 am
+15 0 * * * /usr/bin/php /var/cli/mysql_backups/CreateFullBackup.php >> /var/log/cron/mysql_backups.log 2>&1
  
- # hourly incremental backups (except 24th backup)
- 15 1-23 * * * /usr/bin/php /var/cli/mysql_backups/CreateIncrementalBackup.php >> /var/log/cron/mysql_backups.log 2>&1
- ```
+# hourly incremental backups (except 24th backup)
+15 1-23 * * * /usr/bin/php /var/cli/mysql_backups/CreateIncrementalBackup.php >> /var/log/cron/mysql_backups.log 2>&1
+```
  
- #### For more examples, please see the `./Examples` directory
+#### For more examples, please see the `./Examples` directory
  
  
 ## License

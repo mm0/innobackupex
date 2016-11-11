@@ -35,11 +35,11 @@ trait Traits
                     $decryption_string .
                     " --parallel " . $this->parallel_threads .
                     " $basedir";
-                $this->logTrace( "Decrypting command: " . $command);
+                $this->logDebug( "Decrypting command: " . $command);
                 $response = $this->getConnection()->executeCommand($command,true);
 
-                $this->logTrace($response->stdout() . "\n");
-                $this->logTrace($response->stderr() . "\n");
+                $this->logDebug($response->stdout() . "\n");
+                $this->logDebug($response->stderr() . "\n");
             }
 
             // If compressed, decompress
@@ -49,11 +49,11 @@ trait Traits
                     " --decompress" .
                     " --parallel " . $this->parallel_threads .
                     " $basedir";
-                echo "Decompressing command: " . $command;
+                $this->logDebug( "Decompressing command: " . $command);
                 $response = $this->getConnection()->executeCommand($command,true);
 
-                echo $response->stdout() . "\n";
-                echo $response->stderr() . "\n";
+                $this->logDebug($response->stdout() . "\n");
+                $this->logDebug($response->stderr() . "\n");
             }
 
         }

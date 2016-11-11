@@ -55,16 +55,16 @@ class Configuration
     ) {
         if(!in_array($algorithm,self::$supported_algorithms)){
             throw new EncryptionAlgorithmNotSupportedException(
-                "Algorithm must be one of: " . join(self::$supported_algorithms, ",\n ") .
+                "Algorithm must be one of: " . join(self::$supported_algorithms, ",\n ") . "\n" .
                 $algorithm . " was specified ",
                 0
             );
         }
         $this->algorithm = $algorithm;
-        if(!is_string($key)){
+        if(!is_string($key) || !strlen($key)){
             throw new InvalidEncryptionKeyTypeException(
-                "Error: Encryption key must be of type String, \n" .
-                "Type Provided: " . typeOf($key),
+                "Error: Encryption key must be of type String and length > 0, \n" .
+                "Type Provided: " . gettype($key),
                 0
             );
         }

@@ -73,18 +73,14 @@ class Mysql
      * @param ConnectionInterface $connection
      * @param LoadInterface[] $load_modules
      * @param EncryptionConfiguration $enc_config
-     * @param bool $compressed
      * @param int $parallel_threads
      * @param string $memory
-     * @param string $base_backup_directory
-     * @param string $save_directory_prefix
      */
     public function __construct(
         Configuration $mysql_configuration,
         ConnectionInterface $connection,
         array $load_modules,
         EncryptionConfiguration $enc_config = null,
-        $compressed = false,
         $parallel_threads = 10,
         $memory = "1G"
     ) {
@@ -93,7 +89,6 @@ class Mysql
         $this->load_modules = $load_modules;
         $this->parallel_threads = $parallel_threads;
         $this->encryption_configuration = $enc_config;
-        $this->compressed = $compressed;
         $this->memory = $memory;
     }
 

@@ -18,6 +18,9 @@ Requirements
 - (Optional) GCS CLI
 - MySQL Server with enough free disk space to create a backup
 - (Optional) SSH Access to the MySQL Server
+- (Required for SSH) libssh2-php
+- php5-curl (required for guzzle)
+- python-mysqldb # necessary for ansible mysql module
 
 Methodology
 ---
@@ -221,6 +224,8 @@ Load the previous Backup Info serialized file
  
  All of this is automated for your via our Restoration Configuration, Connection and Restore Modules:
  
+ ### ***You must manually remove /var/lib/mysql on your target server in order to commence a Restoration.
+ 
 Load Backup Info Object from disk 
 
 ```
@@ -255,7 +260,6 @@ Create the Restore Object
       $connection,
       [$aws_restore_module],
       $encryption_configuration,                          // Encryption configuration or null
-      $compressed = true,                                 // Specify whether to compress backup
       $parallel_threads = 100,                            // Parallel threads
       $memory = "10G"                                     // Specify RAM Usage
   );
@@ -280,6 +284,44 @@ When ready, simply call the restore method.  All archives will be downloaded via
  
 #### For more examples, please see the `./Examples` directory
  
+ 
+### Testing
+
+
+Start Vagrant:
+
+```vagrant up```
+
+
+Log into VM:
+
+`vagrant ssh`
+
+
+CD to shared Directory:
+
+`cd /var/www`
+
+
+Install composer packages:
+
+`composer install --dev`
+
+
+Run PHPUnit
+
+`./vendor/bin/phpunit -v --debug`
+
+
+To Reset the Database after failed test suite:
+
+Inside vm: 
+
+`sudo rm -rf /var/lib/mysql`
+
+On Host: 
+
+```vagrant provision --provision-with reset_mysql```
  
 ## License
 

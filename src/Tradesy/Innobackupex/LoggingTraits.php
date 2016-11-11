@@ -43,6 +43,15 @@ trait LoggingTraits
      * @param $message
      * @param string $severity
      */
+    public function logWarning($message)
+    {
+        $this->log($message, "warning");
+
+    }
+    /**
+     * @param $message
+     * @param string $severity
+     */
     public function log($message, $severity = "trace")
     {
 

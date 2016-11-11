@@ -1,0 +1,10 @@
+# roles.txt
+mm0.touch
+mm0.group
+mm0.ntp
+mm0.vimrc
+mm0.sudo 
+mm0.bash
+mm0.baseline
+mm0.percona-mysql-server
+mm0.php-composer

@@ -32,10 +32,10 @@ class Incremental extends AbstractBackup
         $encryption_string = (($this->getEncryptionConfiguration() instanceof $enc_class) ?
             $this->getEncryptionConfiguration()->getConfigurationString() : "");
 
-        $basedir = $this->BackupInfo->getBaseBackupDirectory() . DIRECTORY_SEPARATOR .
-            (is_null($this->BackupInfo->getLatestIncrementalBackup()) ?
-                $this->BackupInfo->getLatestFullBackup() :
-                $this->BackupInfo->getLatestIncrementalBackup());
+        $basedir = $this->getBackupInfo()->getBaseBackupDirectory() . DIRECTORY_SEPARATOR .
+            (is_null($this->getBackupInfo()->getLatestIncrementalBackup()) ?
+                $this->getBackupInfo()->getLatestFullBackup() :
+                $this->getBackupInfo()->getLatestIncrementalBackup());
 
         $this->decryptAndDecompressBackups([$basedir]);
 
@@ -69,13 +69,13 @@ class Incremental extends AbstractBackup
     public function saveBackupInfo()
     {
         $this->logTrace("Backup info saved to home directory");
-        $this->BackupInfo->addIncrementalBackup(
+        $this->getBackupInfo()->addIncrementalBackup(
             $this->getRelativeBackupDirectory()
         );
         $this->writeFile(
             $this->getBaseBackupDirectory() . DIRECTORY_SEPARATOR .
             $this->getBackupInfoFilename(),
-            serialize($this->BackupInfo), 0644
+            serialize($this->getBackupInfo()), 0644
         );
 
     }

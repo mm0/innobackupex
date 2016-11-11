@@ -57,16 +57,17 @@ class Full extends AbstractBackup
      */
     public function saveBackupInfo()
     {
+        $this->fetchBackupInfo();
         $this->logTrace("Backup info saved to home directory");
         $enc_class = "\Tradesy\Innobackupex\Encryption\Configuration";
-        $this->BackupInfo->setBaseBackupDirectory($this->getBaseBackupDirectory());
-        $this->BackupInfo->setLatestFullBackup($this->getRelativeBackupDirectory());
-        $this->BackupInfo->setIncrementalBackups(array());
-        $this->BackupInfo->setRepositoryBaseName(date("m-j-Y--H-i-s", $this->getStartDate()));
-        $this->BackupInfo->setEncrypted(($this->getEncryptionConfiguration() instanceof $enc_class) ? true : false);
-        $this->BackupInfo->setCompression($this->getCompress());
+        $this->getBackupInfo()->setBaseBackupDirectory($this->getBaseBackupDirectory());
+        $this->getBackupInfo()->setLatestFullBackup($this->getRelativeBackupDirectory());
+        $this->getBackupInfo()->setIncrementalBackups(array());
+        $this->getBackupInfo()->setRepositoryBaseName(date("m-j-Y--H-i-s", $this->getStartDate()));
+        $this->getBackupInfo()->setEncrypted(($this->getEncryptionConfiguration() instanceof $enc_class) ? true : false);
+        $this->getBackupInfo()->setCompression($this->getCompress());
         $this->writeFile($this->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $this->getBackupInfoFilename(),
-            serialize($this->BackupInfo), 0644);
+            serialize($this->getBackupInfo()), 0644);
 
     }
 

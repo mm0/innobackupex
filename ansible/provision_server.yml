@@ -88,4 +88,4 @@
       tags: [ 'reset_mysql' ]
     }
   - mm0.php-composer
-  post_tasks:
+  - mm0.awscli

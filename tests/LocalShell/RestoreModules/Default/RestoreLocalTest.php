@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Class LocalShellBackupTest
+ * Class RestoreLocalTest
  */
-class LocalShellBackupTest extends PHPUnit_Framework_TestCase
+class RestoreLocalTest extends PHPUnit_Framework_TestCase
 {
 
     /**
@@ -77,8 +77,9 @@ class LocalShellBackupTest extends PHPUnit_Framework_TestCase
         $this->save_directory = "/tmp/backup_unit/";
         $this->parallel_threads = 100;
 
-        // might need to delete database and run mysql_install_db after restore
+        // TODO: might need to delete database and run mysql_install_db after restore
         // also: service mysql bootstrap-pxc
+        // also: generate random data in database
     }
 
     /**
@@ -250,7 +251,7 @@ class LocalShellBackupTest extends PHPUnit_Framework_TestCase
             $this->parallel_threads,                            // Specify # threads
             $encryption_threads = 100,                  // Specify # threads for encryption
             $memory = "4G",                             // Specify RAM Usage
-            $save_directory = $this->save_directory,           // Specify the directory used to save backup
+            $this->save_directory,           // Specify the directory used to save backup
             $save_directory_prefix = "full_backup_"     // Specify prefix for the full backup name
         );
 
@@ -289,7 +290,7 @@ class LocalShellBackupTest extends PHPUnit_Framework_TestCase
             $this->parallel_threads,                            // Specify # threads
             $encryption_threads = 100,                          // Specify # threads for encryption
             $memory = "4G",                                     // Specify RAM Usage
-            $save_directory = $this->save_directory,                   // Specify the directory used to save backup
+            $this->save_directory,                   // Specify the directory used to save backup
             $save_directory_prefix = "incremental_backup_"      // Specify prefix for to call the full backup
         );
     }
@@ -360,7 +361,7 @@ class LocalShellBackupTest extends PHPUnit_Framework_TestCase
 
         $this->chownDataDirectoryMysql();
 
-            // TODO: test this without chowning
+        // TODO: test this without chowning
         $this->connection->executeCommand("service mysql bootstrap-pxc");
 
         $this->cleanupBackupDirectory();

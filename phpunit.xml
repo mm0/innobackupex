@@ -9,9 +9,14 @@
          bootstrap="tests/bootstrap.php">
 
     <testsuites>
-        <testsuite name="Main Test Suite">
-            <directory suffix=".php">./tests/</directory>
-            <exclude>tests/boostrap.php</exclude>
+        <testsuite name="Configurations">
+            <directory suffix=".php">./tests/Configurations</directory>
+        </testsuite>
+        <!--<testsuite name="LocalShell">-->
+            <!--<directory suffix=".php">./tests/LocalShell</directory>-->
+        <!--</testsuite>-->
+        <testsuite name="SSH">
+            <directory suffix=".php">./tests/SSH</directory>
         </testsuite>
     </testsuites>
 </phpunit>

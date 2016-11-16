@@ -4,9 +4,11 @@ namespace Tradesy\Innobackupex\S3\Local;
 
 use Aws\S3\Model\MultipartUpload\UploadBuilder;
 use \Aws\S3\S3Client;
-use Tradesy\Innobackupex\Backup\Info;
-use Tradesy\Innobackupex\LoggingTraits;
-use Tradesy\Innobackupex\SaveInterface;
+use \Tradesy\Innobackupex\Backup\Info;
+use \Tradesy\Innobackupex\LoggingTraits;
+use \Tradesy\Innobackupex\SaveInterface;
+use \Tradesy\Innobackupex\ConnectionInterface;
+use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
 
 /**
  * Class Upload
@@ -35,52 +37,78 @@ class Upload implements SaveInterface
     /**
      * @var
      */
-    protected $source;
-    /**
-     * @var
-     */
     protected $key;
     /**
      * @var int
      */
     protected $concurrency;
 
+    protected $debug = false;
     /**
      * Upload constructor.
      * @param ConnectionInterface $connection
      * @param S3Client $client
      * @param int $concurrency
      */
-    public function __construct(ConnectionInterface $connection, S3Client $client, $concurrency = 10)
+    public function __construct(
+        ConnectionInterface $connection,
+        $bucket,
+        $region,
+        $concurrency = 10
+    )
     {
         $this->connection = $connection;
-        $this->client = $client;
         $this->concurrency = $concurrency;
+        $this->bucket = $bucket;
+        $this->region = $region;
+        $this->concurrency = $concurrency;
+        $this->client = S3Client::factory([
+            "region" => $this->region
+        ]);
+        $this->testSave();
     }
 
     /**
-     *
+     * @throws BucketNotFoundException
      */
     public function testSave()
     {
-
+        if (!$this->client->doesBucketExist($this->bucket)) {
+            throw new BucketNotFoundException(
+                "S3 bucket (" . $this->bucket . ")  not found in region (" .
+                $this->region . ")",
+                0
+            );
+        }
     }
 
     /**
      * @param string $filename
      */
-    public function save($filename)
+    public function saveFile($filename)
     {
         UploadBuilder::newInstance()
             ->setClient($this->client)
-            ->setSource($this->source)
+            ->setSource($filename)
             ->setBucket($this->bucket)
-            ->setKey($this->key)
+            ->setKey($this->key )
             ->setOption('CacheControl', 'max-age=3600')
             ->setConcurrency($this->concurrency)
             ->build();
     }
-
+    /**
+     * @param string $filename
+     */
+    public function saveDirectory($filename)
+    {
+        $this->client->uploadDirectory($filename, $this->bucket, $this->key, array(
+            'concurrency' => $this->concurrency,
+            'debug'       => $this->debug
+        ));
+    }
+    public function save($filename){
+        $this->saveDirectory($filename);
+    }
     /**
      *
      */
@@ -104,15 +132,10 @@ class Upload implements SaveInterface
     public function saveBackupInfo(Info $info, $filename)
     {
         $serialized = serialize($info);
-
-        $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
-        $command = $this->binary . " s3 cp /tmp/temporary_backup_info s3://" . $this->bucket . "/tradesy_percona_backup_info";
-        echo "Upload latest backup info to S3 with command: $command \n";
-
-        $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
-
+        $filename = strlen($filename) ? $filename : $this->connection->getTemporaryDirectoryPath()."temporary_backup_info";
+        $response = $this->connection->writeFileContents($filename, $serialized);
+        $this->logDebug("Upload latest backup info to S3 with SDK");
+        $this->saveFile($filename);
     }
 
     /**

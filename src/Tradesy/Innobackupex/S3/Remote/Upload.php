@@ -91,10 +91,9 @@ class Upload implements SaveInterface
          */
         $command = $this->binary .
             " --region " . $this->region .
-            " s3 ls | grep -c " . $this->bucket;
-        echo $command;
+            " s3 ls " . $this->bucket ." 2>&1 | grep -c NoSuchBucket" ;
         $response = $this->connection->executeCommand($command);
-        if (intval($response->stdout()) == 0) {
+        if (intval($response->stdout()) == 1) {
             throw new BucketNotFoundException(
                 "S3 bucket (" . $this->bucket . ")  not found in region (" . $this->region . ")",
                 0
@@ -114,12 +113,12 @@ class Upload implements SaveInterface
             $this->bucket .
             "/" .
             $this->key;
-        echo $command;
+        $this->logDebug($command);
         $response = $this->connection->executeCommand(
             $command
         );
-        echo $response->stdout();
-        echo $response->stderr();
+        $this->logDebug($response->stdout());
+        $this->logError($response->stderr());
 
     }
 
@@ -143,7 +142,7 @@ class Upload implements SaveInterface
     {
         // create temp file
         $response = $this->connection->executeCommand("mktemp", true);
-        $file = rtrim($response->stdout());
+        $file = $response->stdout();
         $serialized = serialize($info);
 
         $response = $this->connection->writeFileContents("$file", $serialized);
@@ -151,11 +150,11 @@ class Upload implements SaveInterface
             " s3 cp $file s3://" . $this->bucket .
             DIRECTORY_SEPARATOR .
             $filename;
-        echo "Upload latest backup info to S3 with command: $command \n";
+        $this->logDebug("Upload latest backup info to S3 with command: $command \n");
 
         $response = $this->connection->executeCommand($command, true);
-        echo $response->stdout();
-        echo $response->stderr();
+        $this->logDebug($response->stdout());
+        $this->logError($response->stderr());
         $command = $this->binary .
             " s3 cp $file s3://" . $this->bucket .
             DIRECTORY_SEPARATOR .
@@ -163,8 +162,8 @@ class Upload implements SaveInterface
             DIRECTORY_SEPARATOR .
             "$filename";
         $response = $this->connection->executeCommand($command, true);
-        echo $response->stdout();
-        echo $response->stderr();
+        $this->logDebug($response->stdout());
+        $this->logError($response->stderr());
     }
 
     /**

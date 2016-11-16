@@ -332,6 +332,12 @@ abstract class AbstractBackup
         $this->checkInnobackupexBinaryInstalled();
         $this->start();
         $this->performBackup();
+        $this->getConnection()->recursivelyChownDirectory(
+            $this->getFullPathToBackup(),
+            $this->mysql_configuration->getDataOwner(),
+            $this->mysql_configuration->getDataGroup(),
+            775
+        );
         $this->saveBackupInfo();
         $this->logTrace("Saved to " . $this->getFullPathToBackup() . "\n");
         foreach ($this->save_modules as $saveModule) {
@@ -376,7 +382,6 @@ abstract class AbstractBackup
         } else {
             $this->BackupInfo = new Info();
         }
-
         return $this->BackupInfo;
     }
 

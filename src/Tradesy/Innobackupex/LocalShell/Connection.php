@@ -184,4 +184,9 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
 
         return false;
     }
+
+    public function recursivelyChownDirectory($directory, $owner, $group, $mode){
+        $this->executeCommand("chown -R $owner:$group $directory");
+        $this->executeCommand("chmod -R $mode $directory");
+    }
 }

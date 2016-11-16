@@ -73,6 +73,7 @@ $encryption_configuration = new \Tradesy\Innobackupex\Encryption\Configuration(
     $key 
 );
 ```
+*** Please note, it is not recommended to store credentials or keys in plaintext within your VCS repositories.  The example above is just an example.  You can either encrypt the backup script, or encrypt a file with the key in it that is loadable by your backup script, or possibly use environment variables or some other solution for sensitive information. ***  
 
 ### SSH Connection Configuration 
 ```
@@ -315,13 +316,15 @@ Run PHPUnit
 
 To Reset the Database after failed test suite:
 
-Inside vm: 
-
-`sudo rm -rf /var/lib/mysql`
 
 On Host: 
 
-```vagrant provision --provision-with reset_mysql```
+```
+vagrant ssh -c 'sudo rm -rf /var/lib/mysql'
+
+
+vagrant provision --provision-with reset_mysql
+```
  
 ## License
 

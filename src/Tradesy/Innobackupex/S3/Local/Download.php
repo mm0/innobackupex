@@ -4,10 +4,8 @@ namespace Tradesy\Innobackupex\S3\Local;
 
 use Tradesy\Innobackupex\Backup\Info;
 use Tradesy\Innobackupex\LoggingTraits;
-use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
-use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
 use \Aws\S3\S3Client;
 
@@ -81,7 +79,6 @@ class Download implements LoadInterface
                 0
             );
         }
-
     }
 
     /**
@@ -125,8 +122,8 @@ class Download implements LoadInterface
     {
 
         $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
+        $this->logDebug($response->stdout());
+        $this->logError($response->stderr());
 
     }
 

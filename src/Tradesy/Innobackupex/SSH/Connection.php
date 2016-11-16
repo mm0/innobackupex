@@ -8,6 +8,8 @@ use Tradesy\Innobackupex\Exceptions\ServerNotListeningException;
 use Tradesy\Innobackupex\Exceptions\SSH2ConnectionException;
 use Tradesy\Innobackupex\ConnectionResponse;
 use Tradesy\Innobackupex\LoggingTraits;
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
 
 /**
  * Class Connection
@@ -95,16 +97,17 @@ class Connection implements ConnectionInterface
      */
     public function executeCommand($command, $no_sudo = false)
     {
+        $command = ($this->isSudoAll() && !$no_sudo ? "sudo " : "") . $command;
         $stream = ssh2_exec(
             $this->getConnection(),
-            ($this->isSudoAll() && !$no_sudo ? "sudo " : "") . $command,
+            $command,
             true
         );
         $stderrStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
         stream_set_blocking($stream, true);
         stream_set_blocking($stderrStream, true);
-        $stdout = stream_get_contents($stream);
-        $stderr = stream_get_contents($stderrStream);
+        $stdout = rtrim(stream_get_contents($stream));
+        $stderr = rtrim(stream_get_contents($stderrStream));
 
         return new ConnectionResponse(
             $command,
@@ -151,8 +154,9 @@ class Connection implements ConnectionInterface
         $this->logTrace("Writing file: " . $file);
         $temp_file = tempnam($this->getTemporaryDirectoryPath(), "");
         file_put_contents($temp_file, $contents);
-        ssh2_scp_send($this->getConnection(), $temp_file, $file, $mode);
+        $result = ssh2_scp_send($this->getConnection(), $temp_file, $file, $mode);
         unlink($temp_file);
+        return boolval($result);
     }
 
     /**
@@ -237,5 +241,45 @@ class Connection implements ConnectionInterface
         $sftp = ssh2_sftp($this->getConnection());
 
         return scandir('ssh2.sftp://' . $sftp . $directory);
+    }
+
+    /**
+     * @param string $directory
+     * @return mixed
+     */
+    public function mkdir($directory)
+    {
+        $sftp = ssh2_sftp($this->getConnection());
+        return mkdir('ssh2.sftp://' . $sftp . $directory);
+    }
+
+    /**
+     * @param string $directory
+     * @return mixed
+     */
+    public function rmdir($directory)
+    {
+        $sftp_directory = 'ssh2.sftp://' . ssh2_sftp($this->getConnection()) . $directory;
+
+        $this->logWarning("Warning, *** method rmdir utilized *** on directory: " . $directory );
+        if (is_dir($sftp_directory) === true) {
+            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($sftp_directory), RecursiveIteratorIterator::CHILD_FIRST);
+
+            foreach ($files as $file) {
+                if (in_array($file->getBasename(), array('.', '..')) !== true) {
+                    if ($file->isDir() === true) {
+                        rmdir($file->getPathName());
+                    } else if (($file->isFile() === true) || ($file->isLink() === true)) {
+                        unlink($file->getPathname());
+                    }
+                }
+            }
+
+            return rmdir($sftp_directory);
+        } else if ((is_file($sftp_directory) === true) || (is_link($sftp_directory) === true)) {
+            return unlink($sftp_directory);
+        }
+
+        return false;
     }
 }

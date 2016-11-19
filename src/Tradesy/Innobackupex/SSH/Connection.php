@@ -151,7 +151,7 @@ class Connection implements ConnectionInterface
      */
     public function writeFileContents($file, $contents, $mode = 0644)
     {
-        $this->logTrace("Writing file: " . $file);
+        $this->logInfo("Writing file: " . $file);
         $temp_file = tempnam($this->getTemporaryDirectoryPath(), "");
         file_put_contents($temp_file, $contents);
         $result = ssh2_scp_send($this->getConnection(), $temp_file, $file, $mode);
@@ -259,27 +259,11 @@ class Connection implements ConnectionInterface
      */
     public function rmdir($directory)
     {
-        $sftp_directory = 'ssh2.sftp://' . ssh2_sftp($this->getConnection()) . $directory;
-
-        $this->logWarning("Warning, *** method rmdir utilized *** on directory: " . $directory );
-        if (is_dir($sftp_directory) === true) {
-            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($sftp_directory), RecursiveIteratorIterator::CHILD_FIRST);
-
-            foreach ($files as $file) {
-                if (in_array($file->getBasename(), array('.', '..')) !== true) {
-                    if ($file->isDir() === true) {
-                        rmdir($file->getPathName());
-                    } else if (($file->isFile() === true) || ($file->isLink() === true)) {
-                        unlink($file->getPathname());
-                    }
-                }
-            }
-
-            return rmdir($sftp_directory);
-        } else if ((is_file($sftp_directory) === true) || (is_link($sftp_directory) === true)) {
-            return unlink($sftp_directory);
-        }
-
-        return false;
+        $sftp = ssh2_sftp($this->getConnection());
+        return ssh2_sftp_rmdir($sftp,$directory);
+    }
+    public function recursivelyChownDirectory($directory, $owner, $group, $mode){
+        $this->executeCommand("chown -R $owner:$group $directory");
+        $this->executeCommand("chmod -R $mode $directory");
     }
 }

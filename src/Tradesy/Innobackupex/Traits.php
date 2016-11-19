@@ -21,7 +21,7 @@ trait Traits
             $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "");
 
         foreach ($backups as $basedir) {
-            $this->logTrace("\n\n PROCESSING: " . $basedir . " \n\n\n");
+            $this->logInfo("\n\n PROCESSING: " . $basedir . " \n\n\n");
             /*
              * Next we have to check if files are encrpyted,
              */

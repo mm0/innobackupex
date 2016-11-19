@@ -11,26 +11,17 @@ class SSHTest extends \PHPUnit_Framework_TestCase
      * @var \Tradesy\Innobackupex\SSH\Configuration
      */
     private $ssh_configuration;
-    /**
-     * @var string
-     */
-    private $ssh_algorithm;
-    /**
-     * @var string
-     */
-    private $ssh_key;
+    private $ip_address = "127.0.0.1";
+    private $port = 22;
+    private $user = "vagrant";
+    private $public_key = "/home/vagrant/.ssh/id_rsa.pub";
+    private $private_key = "/home/vagrant/.ssh/id_rsa";
+    private $hostkey = "ssh-rsa";
+    private $passphrase = "";
 
     public function setUp()
     {
-        $this->ssh_algorithm = "AES256";
-        $this->ssh_key = "MY_STRING_ENCRYPTION_KEY";
-        "127.0.0.1",
-            22,
-            "vagrant",
-            "/home/vagrant/.ssh/id_rsa.pub",
-            "/home/vagrant/.ssh/id_rsa",
-            '',             // ssh key passphrase
-            array('hostkey' => 'ssh-rsa')
+        $this->setupSSHConfiguration();
     }
 
     /**
@@ -45,39 +36,35 @@ class SSHTest extends \PHPUnit_Framework_TestCase
     private function setupSSHConfiguration()
     {
         $this->ssh_configuration = new \Tradesy\Innobackupex\SSH\Configuration(
-            $this->ssh_algorithm,
-            $this->ssh_key
+            $this->ip_address,
+            $this->port,
+            $this->user,
+            $this->public_key,
+            $this->private_key,
+            $this->passphrase,             // ssh key passphrase
+            array('hostkey' => $this->hostkey)
         );
     }
     public function testSSHConfiguration()
     {
 
-        $this->setupSSHConfiguration();
-        $this->ssh_algorithm = "FAKE";
-        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\SSHAlgorithmNotSupportedException::class);
+        $this->public_key = "/FAKEFILE";
+        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\FileNotFoundException::class);
         $this->setupSSHConfiguration();
 
-        $this->ssh_algorithm = "AES192";
-        $this->ssh_key = 1;
+        $this->private_key = "/FAKEFILE";
         $this->setupSSHConfiguration();
 
     }
 
-    public function testSSHConfigurationInvalidKeyType()
+    public function testSSHConfigurationParams()
     {
-        $this->ssh_algorithm = "AES192";
-        $this->ssh_key = 1;
-        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\InvalidSSHKeyTypeException::class);
-        $this->setupSSHConfiguration();
-    }
-
-    public
-    function testSSHConfigurationInvalidKeyLength()
-    {
-        $this->ssh_algorithm = "AES192";
-        $this->ssh_key = "";
-        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\InvalidSSHKeyTypeException::class);
-        $this->setupSSHConfiguration();
+        $this->assertEquals($this->ip_address, $this->ssh_configuration->host());
+        $this->assertEquals($this->port, $this->ssh_configuration->port());
+        $this->assertEquals($this->user, $this->ssh_configuration->user());
+        $this->assertEquals($this->public_key, $this->ssh_configuration->publicKey());
+        $this->assertEquals($this->private_key, $this->ssh_configuration->privateKey());
+        $this->assertEquals($this->passphrase, $this->ssh_configuration->passphrase());
     }
 
 }

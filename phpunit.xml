@@ -12,11 +12,11 @@
         <testsuite name="Configurations">
             <directory suffix=".php">./tests/Configurations</directory>
         </testsuite>
-        <!--<testsuite name="LocalShell">-->
-            <!--<directory suffix=".php">./tests/LocalShell</directory>-->
-        <!--</testsuite>-->
-        <testsuite name="SSH">
-            <directory suffix=".php">./tests/SSH</directory>
+        <testsuite name="Connections">
+            <directory suffix=".php">./tests/Connections</directory>
+        </testsuite>
+        <testsuite name="FullTestSuites">
+            <directory suffix=".php">./tests/FullTestSuites</directory>
         </testsuite>
     </testsuites>
 </phpunit>

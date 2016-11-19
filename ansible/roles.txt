@@ -9,3 +9,4 @@ mm0.baseline
 mm0.percona-mysql-server
 mm0.php-composer
 mm0.awscli
+mm0.gsutil

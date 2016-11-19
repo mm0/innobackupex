@@ -60,7 +60,7 @@ class ConnectionResponse
 
     public function showOutput()
     {
-        $this->logTrace($this->stdout());
+        $this->logInfo($this->stdout());
         $this->logError($this->stderr());
     }
 

@@ -4,7 +4,6 @@ namespace Tradesy\Innobackupex\GCS\Remote;
 
 use Tradesy\Innobackupex\Backup\Info;
 use Tradesy\Innobackupex\LoggingTraits;
-use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\ConnectionInterface;
 use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
@@ -87,7 +86,7 @@ class Download implements LoadInterface
          */
         $command = $this->binary .
             " ls | grep -c " . $this->bucket;
-        $this->logTrace(($command));
+        $this->logInfo(($command));
         $response = $this->connection->executeCommand($command);
         if (intval($response->stdout()) == 0) {
             throw new BucketNotFoundException(
@@ -105,11 +104,11 @@ class Download implements LoadInterface
     {
         # upload compressed file to s3
         $command = $this->binary . " s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
-        $this->logTrace($command);
+        $this->logInfo($command);
         $response = $this->connection->executeCommand(
             $command
         );
-        $this->logTrace($response->stdout());
+        $this->logInfo($response->stdout());
         $this->logError($response->stderr());
 
     }
@@ -137,10 +136,10 @@ class Download implements LoadInterface
         $command = $this->binary 
             . " s3 cp /tmp/temporary_backup_info s3://" 
             . $this->bucket . "/tradesy_percona_backup_info";
-        $this->logTrace("Upload latest backup info to S3 with command: $command");
+        $this->logInfo("Upload latest backup info to S3 with command: $command");
 
         $response = $this->connection->executeCommand($command);
-        $this->logTrace($response->stdout());
+        $this->logInfo($response->stdout());
         $this->logError($response->stderr());
 
     }
@@ -155,11 +154,11 @@ class Download implements LoadInterface
         # upload compressed file to s3
         $command = $this->binary
             . " s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
-        $this->logTrace($command);
+        $this->logInfo($command);
         $response = $this->connection->executeCommand(
             $command
         );
-        $this->logTrace($response->stdout());
+        $this->logInfo($response->stdout());
         $this->logError($response->stderr());
 
     }

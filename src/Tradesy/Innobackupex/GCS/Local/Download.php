@@ -3,10 +3,8 @@
 namespace Tradesy\Innobackupex\GCS\Local;
 
 use Tradesy\Innobackupex\Backup\Info;
-use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
-use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
 use \Google;
 
@@ -51,9 +49,7 @@ class Download implements LoadInterface
      * Upload constructor.
      * @param $connection
      * @param $bucket
-     * @param $key
      * @param $region
-     * @param bool $remove_file_after_upload
      * @param int $concurrency
      */
     public function __construct(
@@ -99,7 +95,7 @@ class Download implements LoadInterface
         echo "downloading $filename\n\n";
         echo "saving to: "  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR  ."\n\n";
         $service = new \Google_Service_Storage($this->client);
-        $object = $service->objects->get( $this->bucket, $filename )->;
+        $object = $service->objects->get( $this->bucket, $filename )->toSimpleObject();
         $request = new \Google_Http_Request($object['mediaLink'], 'GET');
         $signed_request = $this->client->getAuth()->sign($request);
         $http_request = $this->client->getIo()->makeRequest($signed_request);

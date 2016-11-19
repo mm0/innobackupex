@@ -18,9 +18,9 @@ trait LoggingTraits
     /**
      * @param $message
      */
-    public function logTrace($message)
+    public function logInfo($message)
     {
-        $this->log($message, "trace");
+        $this->log($message, "INFO");
     }
 
     /**
@@ -28,7 +28,7 @@ trait LoggingTraits
      */
     public function logDebug($message)
     {
-        $this->log($message, "debug");
+        $this->log($message, "DEBUG");
     }
 
     /**
@@ -36,7 +36,7 @@ trait LoggingTraits
      */
     public function logError($message)
     {
-        $this->log($message, "error");
+        $this->log($message, "ERROR");
     }
 
     /**
@@ -45,15 +45,19 @@ trait LoggingTraits
      */
     public function logWarning($message)
     {
-        $this->log($message, "warning");
+        $this->log($message, "WARNING");
 
     }
     /**
      * @param $message
      * @param string $severity
      */
-    public function log($message, $severity = "trace")
+    public function log($message, $severity = "INFO")
     {
-
+        if(strlen($message)) {
+            $log = new Logger('Tradesy\Innobackupex');
+            $log->pushHandler(new StreamHandler("php://stderr",Logger::ERROR));
+            $log->log(Logger::toMonologLevel($severity), $message);
+        }
     }
 }

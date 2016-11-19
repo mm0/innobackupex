@@ -51,17 +51,24 @@ class Upload implements SaveInterface
      * @param GCSClient $client
      * @param int $concurrency
      */
-    public function __construct(ConnectionInterface $connection, GCSClient $client, $concurrency = 10)
+    public function __construct(ConnectionInterface $connection,
+                                $bucket,
+                                $region,
+                                $concurrency = 10
+    )
     {
         $this->connection = $connection;
-        $this->client = $client;
+        $this->bucket = $bucket;
+        $this->region = $region;
         $this->concurrency = $concurrency;
+        $this->client = new \Google_Client();
     }
 
     /**
      *
      */
-    public function testSave()
+    public
+    function testSave()
     {
 
     }
@@ -69,7 +76,8 @@ class Upload implements SaveInterface
     /**
      * @param string $filename
      */
-    public function save($filename)
+    public
+    function save($filename)
     {
         $uploader = UploadBuilder::newInstance()
             ->setClient($this->client)
@@ -84,7 +92,8 @@ class Upload implements SaveInterface
     /**
      *
      */
-    public function cleanup()
+    public
+    function cleanup()
     {
 
     }
@@ -92,7 +101,8 @@ class Upload implements SaveInterface
     /**
      *
      */
-    public function verify()
+    public
+    function verify()
     {
 
     }
@@ -101,7 +111,8 @@ class Upload implements SaveInterface
      * @param \Tradesy\Innobackupex\Backup\Info $info
      * @param $filename
      */
-    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename)
+    public
+    function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename)
     {
         $serialized = serialize($info);
 
@@ -118,7 +129,8 @@ class Upload implements SaveInterface
     /**
      * @param mixed $key
      */
-    public function setKey($key)
+    public
+    function setKey($key)
     {
         $this->key = $key;
     }

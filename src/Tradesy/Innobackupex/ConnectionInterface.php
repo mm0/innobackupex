@@ -68,4 +68,6 @@ interface ConnectionInterface
      * @return mixed
      */
     function getTemporaryDirectoryPath();
+
+    function recursivelyChownDirectory($directory, $owner, $group, $mode);
 }

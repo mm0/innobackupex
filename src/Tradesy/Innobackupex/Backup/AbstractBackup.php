@@ -288,7 +288,7 @@ abstract class AbstractBackup
     {
         $this->setStartDate(time());
         $this->setRelativeBackupDirectory();
-        $this->logTrace("Starting Backup: " . date("F j, Y, g:i a", $this->getStartDate()));
+        $this->logInfo("Starting Backup: " . date("F j, Y, g:i a", $this->getStartDate()));
     }
 
     /**
@@ -297,7 +297,7 @@ abstract class AbstractBackup
     public function end()
     {
         $this->setEndDate(time());
-        $this->logTrace("Backup Finished: " . date("F j, Y, g:i a", $this->getEndDate()));
+        $this->logInfo("Backup Finished: " . date("F j, Y, g:i a", $this->getEndDate()));
 
     }
 
@@ -319,7 +319,7 @@ abstract class AbstractBackup
                 0
             );
         } else {
-            $this->logTrace('Innobackupex located: ' . $response->stdout() . "\n");
+            $this->logInfo('Innobackupex located: ' . $response->stdout() . "\n");
         }
     }
 
@@ -339,7 +339,7 @@ abstract class AbstractBackup
             775
         );
         $this->saveBackupInfo();
-        $this->logTrace("Saved to " . $this->getFullPathToBackup() . "\n");
+        $this->logInfo("Saved to " . $this->getFullPathToBackup() . "\n");
         foreach ($this->save_modules as $saveModule) {
             $saveModule->setKey(
                 $this->BackupInfo->getRepositoryBaseName() .
@@ -376,9 +376,9 @@ abstract class AbstractBackup
             $this->getBackupInfoFilename();
         if ($this->getConnection()->file_exists($remote_file)) {
             $file_contents = $this->getConnection()->getFileContents($remote_file);
-            $this->logTrace($file_contents);
+            $this->logInfo($file_contents);
             $this->BackupInfo = unserialize($file_contents);
-            $this->logTrace($this->BackupInfo);
+            $this->logInfo($this->BackupInfo);
         } else {
             $this->BackupInfo = new Info();
         }

@@ -56,7 +56,7 @@ class Incremental extends AbstractBackup
             " --incremental-basedir=" .
             $basedir;
 
-        $this->logTrace("Backup Command: $command");
+        $this->logInfo("Backup Command: $command");
         $response = $this->getConnection()->executeCommand($command);
 
         $this->logDebug($response->stdout());
@@ -68,7 +68,7 @@ class Incremental extends AbstractBackup
      */
     public function saveBackupInfo()
     {
-        $this->logTrace("Backup info saved to home directory");
+        $this->logInfo("Backup info saved to home directory");
         $this->getBackupInfo()->addIncrementalBackup(
             $this->getRelativeBackupDirectory()
         );

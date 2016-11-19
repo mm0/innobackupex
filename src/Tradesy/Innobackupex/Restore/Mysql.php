@@ -113,7 +113,7 @@ class Mysql
         $base_dir = $this->BackupInfo->getBaseBackupDirectory();
         $full_dir = $base_dir . DIRECTORY_SEPARATOR . $directory;
         if ($this->directoryOrFileExists($full_dir)) {
-            $this->logTrace(" full directory found " . $full_dir);
+            $this->logInfo(" full directory found " . $full_dir);
         } else {
             // use loadmodules to restore this backup
             $this->loadBackupDirectoryFromModules($directory);
@@ -208,13 +208,13 @@ class Mysql
         /*
          * Finally Copy Back the directory
          */
-        $this->logTrace("Copying Back mysql backup");
+        $this->logInfo("Copying Back mysql backup");
         $this->copyBack($base_dir . DIRECTORY_SEPARATOR . $this->BackupInfo->getLatestFullBackup());
 
         /*
          * Don't forget to chown the directory
          */
-        $this->logTrace("Chowning mysql directory");
+        $this->logInfo("Chowning mysql directory");
         $this->ChownDirectory();
 
         /*
@@ -236,7 +236,7 @@ class Mysql
      */
     protected function MarkDirectoryAsPrepared($directory)
     {
-        $this->logTrace("writing $directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file");
+        $this->logInfo("writing $directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file");
         $this->getConnection()->writeFileContents($directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file, "");
     }
 
@@ -273,16 +273,16 @@ class Mysql
                 ? " --incremental-dir=" . $inc_backup_full_path
                 : "");
 
-        $this->logTrace("Backup Command: $command");
+        $this->logInfo("Backup Command: $command");
         $response = $this->connection->executeCommand(
             $command,
             true
         );
 
-        $this->logTrace($response->stdout());
+        $this->logInfo($response->stdout());
         $this->logError($response->stderr());
         // Mark backup
-        $this->logTrace("Marking backup as already prepared");
+        $this->logInfo("Marking backup as already prepared");
         $this->MarkDirectoryAsPrepared((strlen($inc_dir) ? $inc_backup_full_path : $full_backup_full_path));
     }
 
@@ -294,10 +294,10 @@ class Mysql
         $command = "innobackupex" .
             " --copy-back $base_dir ";
 
-        $this->logTrace("Running Command: " . $command);
+        $this->logInfo("Running Command: " . $command);
         $response = $this->getConnection()->executeCommand($command);
 
-        $this->logTrace($response->stdout());
+        $this->logInfo($response->stdout());
         $this->logError($response->stderr());
     }
 
@@ -314,7 +314,7 @@ class Mysql
 
         $response = $this->getConnection()->executeCommand($command);
 
-        $this->logTrace($response->stdout());
+        $this->logInfo($response->stdout());
         $this->logError($response->stderr());
     }
 

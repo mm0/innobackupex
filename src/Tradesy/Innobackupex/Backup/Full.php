@@ -27,9 +27,7 @@ class Full extends AbstractBackup
         $port = $this->getMysqlConfiguration()->getPort();
         $directory = $this->getFullPathToBackup();
         $enc_class = "\Tradesy\Innobackupex\Encryption\Configuration";
-        /*
-         * TODO: --parallel
-         */
+
         $command =
             "innobackupex" .
             " --user=" . $user .
@@ -45,7 +43,7 @@ class Full extends AbstractBackup
                 " --encrypt-threads=" . $this->encrypt_threads : "") .
             " " . $directory;
 
-        $this->logTrace("Backup Command: $command");
+        $this->logInfo("Backup Command: $command");
         $response = $this->getConnection()->executeCommand($command);
 
         $this->logDebug($response->stdout());
@@ -58,7 +56,7 @@ class Full extends AbstractBackup
     public function saveBackupInfo()
     {
         $this->fetchBackupInfo();
-        $this->logTrace("Backup info saved to home directory");
+        $this->logInfo("Backup info saved to home directory");
         $enc_class = "\Tradesy\Innobackupex\Encryption\Configuration";
         $this->getBackupInfo()->setBaseBackupDirectory($this->getBaseBackupDirectory());
         $this->getBackupInfo()->setLatestFullBackup($this->getRelativeBackupDirectory());

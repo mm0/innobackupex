@@ -122,6 +122,12 @@ class Upload implements SaveInterface
 
     }
 
+    public function saveFile($filename){
+        $this->save($filename);
+    }
+    public function saveDirectory($filename){
+        $this->save($filename);
+    }
     /**
      *
      */

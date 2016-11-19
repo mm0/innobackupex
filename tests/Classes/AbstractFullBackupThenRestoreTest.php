@@ -1,68 +1,112 @@
 <?php
 
 /**
- * Class RestoreLocalTest
+ * Created by PhpStorm.
+ * User: matt
+ * Date: 11/18/16
+ * Time: 6:46 PM
  */
-class RestoreLocalTest extends PHPUnit_Framework_TestCase
+abstract class AbstractFullBackupThenRestoreTest extends PHPUnit_Framework_TestCase
 {
 
     /**
-     * @var Tradesy\Innobackupex\Backup\AbstractBackup
+     * @var \Tradesy\Innobackupex\Backup\AbstractBackup
      */
-    private $backup;
+    protected $backup;
     /**
-     * @var Tradesy\Innobackupex\Restore\Mysql
+     * @var \Tradesy\Innobackupex\Restore\Mysql
      */
-    private $restore;
+    protected $restore;
     /**
-     * @var Tradesy\Innobackupex\MySQL\Configuration
+     * @var \Tradesy\Innobackupex\MySQL\Configuration
      */
-    private $mysql_config;
+    protected $mysql_config;
     /**
-     * @var Tradesy\Innobackupex\ConnectionInterface
+     * @var \Tradesy\Innobackupex\ConnectionInterface
      */
-    private $connection;
+    protected $connection;
     /**
      * @var array
      */
-    private $save_modules = array();
+    protected $save_modules = array();
+    /**
+     * @var array
+     */
+    protected $restore_modules = array();
     /**
      * @var string
      */
-    private $mysql_host = "127.0.0.1";   /* this should be localhost (IP since not using unix socket) because we are connecting via ssh below */
+    protected $mysql_host = "127.0.0.1";   /* this should be localhost (IP since not using unix socket) because we are connecting via ssh below */
     /**
      * @var string
      */
-    private $mysql_user = "root";
+    protected $mysql_user = "root";
     /**
      * @var string
      */
-    private $mysql_password = "password";
+    protected $mysql_password = "password";
     /**
      * @var
      */
-    private $mysql_port;
-
+    protected $mysql_port;
     /**
-     * @var Tradesy\Innobackupex\Encryption\Configuration
+     * @var \Tradesy\Innobackupex\Encryption\Configuration
      */
-    private $encryption_configuration;
-    /**
-     * @var string
-     */
-    private $encryption_algorithm;
+    protected $encryption_configuration;
     /**
      * @var string
      */
-    private $encryption_key;
+    protected $encryption_algorithm;
     /**
      * @var string
      */
-    private $save_directory;
+    protected $encryption_key;
+    /**
+     * @var string
+     */
+    protected $save_directory;
     /**
      * @var int
      */
-    private $parallel_threads;
+    protected $parallel_threads;
+
+    /**
+     * @var string
+     */
+    protected $host = "127.0.0.1";
+    /**
+     * @var int
+     */
+    protected $port = 22;
+    /**
+     * @var string
+     */
+    protected $user = "vagrant";
+    /**
+     * @var string
+     */
+    protected $passphrase = '';
+    /**
+     * @var string
+     */
+    protected $public_key_file = "/home/vagrant/.ssh/id_rsa.pub";
+    /**
+     * @var string
+     */
+    protected $private_key_file = "/home/vagrant/.ssh/id_rsa";
+    /**
+     * @var array
+     */
+    protected $ssh_options;
+    protected $hostkey = "ssh-rsa";
+
+    protected $bucket = "innobackup-testing-bucket";
+    protected $region = "us-west-1";
+    protected $concurrency = 16;
+    /**
+     * @var \Tradesy\Innobackupex\SSH\Configuration
+     */
+    protected $ssh_configuration;
     /**
      *
      */
@@ -75,7 +119,8 @@ class RestoreLocalTest extends PHPUnit_Framework_TestCase
         $this->encryption_algorithm = "AES256";
         $this->encryption_key = "MY_STRING_ENCRYPTION_KEY";
         $this->save_directory = "/tmp/backup_unit/";
-        $this->parallel_threads = 100;
+        $this->parallel_threads = 16;
+
 
         // TODO: might need to delete database and run mysql_install_db after restore
         // also: service mysql bootstrap-pxc
@@ -89,12 +134,14 @@ class RestoreLocalTest extends PHPUnit_Framework_TestCase
     {
         $this->mysql_config = null;
         $this->connection = null;
+        $this->save_modules = null;
+        $this->restore_modules = null;
     }
 
     /**
      *
      */
-    private function createMySQLConfigurationObject()
+    protected function createMySQLConfigurationObject()
     {
         // Create MySQL configuration object
         $this->mysql_config = new \Tradesy\Innobackupex\MySQL\Configuration (
@@ -108,17 +155,11 @@ class RestoreLocalTest extends PHPUnit_Framework_TestCase
     /**
      *
      */
-    private function createConnection()
-    {
-        $this->connection = new \Tradesy\Innobackupex\LocalShell\Connection();
-        $this->connection->setSudoAll(true);
-    }
+    abstract protected function createConnection();
 
-    private function setupSaveModules()
-    {
-        $this->save_modules = null;
+    abstract protected function setupSaveModules();
 
-    }
+    abstract protected function setupRestoreModules();
 
     private function setupEncryptionConfiguration()
     {
@@ -129,115 +170,14 @@ class RestoreLocalTest extends PHPUnit_Framework_TestCase
     }
 
 
-    /**
-     *
-     */
-    public function testCreateMysqlConfigurationObject()
-    {
-        // Setup
-        $this->createMySQLConfigurationObject();
-        $this->mysql_config->verify();
-        // Defaults
-        $default_data_directory = "/var/lib/mysql";
-        $default_data_owner = $default_data_group = "mysql";
-
-        $this->assertEquals($this->mysql_host, $this->mysql_config->getHost());
-        $this->assertEquals($this->mysql_user, $this->mysql_config->getUsername());
-        $this->assertEquals($this->mysql_password, $this->mysql_config->getPassword());
-        $this->assertEquals($this->mysql_port, $this->mysql_config->getPort());
-        $this->assertEquals($default_data_directory, $this->mysql_config->getDataDirectory(), "Check default Data Directory");
-        $this->mysql_config->setDataDirectory($default_data_directory . "2");
-        $this->assertEquals($default_data_directory . "2", $this->mysql_config->getDataDirectory(), "Check Data Directory get/set");
-
-
-        $this->assertEquals($default_data_owner, $this->mysql_config->getDataOwner(), "Check default Data Owner");
-        $this->assertEquals($default_data_group, $this->mysql_config->getDataGroup(), "Check default Data Group");
-        $this->mysql_config->setDataOwner($default_data_owner . "2");
-        $this->mysql_config->setDataGroup($default_data_group . "2");
-        $this->assertEquals($default_data_group . "2", $this->mysql_config->getDataGroup());
-        $this->assertEquals($default_data_owner . "2", $this->mysql_config->getDataOwner());
-
-    }
-
-    public function testLocalShellConnection()
-    {
-        $this->createConnection();
-        $this->connection->verify();
-
-        $this->connection->setSudoAll(false);
-        $this->assertInstanceOf(\Tradesy\Innobackupex\ConnectionInterface::class, $this->connection);
-        $command = "whoami";
-        $this->assertFalse($this->connection->isSudoAll());
-        $response = $this->connection->executeCommand($command);
-
-        $this->assertInstanceOf(\Tradesy\Innobackupex\ConnectionResponse::class, $response);
-        $this->assertEquals($command, $response->command());
-
-        // Assuming testing in vagrant rather than elsewhere
-        $this->assertEquals("vagrant", $response->stdout());
-
-        $this->connection->setSudoAll(true);
-        $this->assertTrue($this->connection->isSudoAll());
-
-        $response = $this->connection->executeCommand($command);
-        $this->assertEquals("sudo " . $command, $response->command());
-        $this->assertEquals("root", $response->stdout());
-
-        $this->connection->setSudoAll(false);
-        $random = substr(md5(rand()), 0, 7);
-        $contents = "unit_test" . $random;
-        $tmp_file = $this->connection->getTemporaryDirectoryPath() . $contents;
-        $result = $this->connection->writeFileContents($tmp_file, $contents);
-        $this->assertTrue($result);
-
-        $this->assertTrue($this->connection->file_exists($tmp_file));
-
-        $file_contents = $this->connection->getFileContents($tmp_file);
-        $this->assertEquals($contents, $file_contents);
-
-        $scan = $this->connection->scandir($this->connection->getTemporaryDirectoryPath());
-        $this->assertNotFalse($scan);
-
-        $this->assertTrue($this->connection->mkdir($tmp_file . "dir"));
-    }
-
-    public function testEncryptionConfiguration()
-    {
-
-        $this->setupEncryptionConfiguration();
-        $this->encryption_algorithm = "FAKE";
-        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\EncryptionAlgorithmNotSupportedException::class);
-        $this->setupEncryptionConfiguration();
-
-        $this->encryption_algorithm = "AES192";
-        $this->encryption_key = 1;
-        $this->setupEncryptionConfiguration();
-
-    }
-
-    public function testEncryptionConfigurationInvalidKeyType()
-    {
-        $this->encryption_algorithm = "AES192";
-        $this->encryption_key = 1;
-        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\InvalidEncryptionKeyTypeException::class);
-        $this->setupEncryptionConfiguration();
-    }
-
-    public
-    function testEncryptionConfigurationInvalidKeyLength()
-    {
-        $this->encryption_algorithm = "AES192";
-        $this->encryption_key = "";
-        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\InvalidEncryptionKeyTypeException::class);
-        $this->setupEncryptionConfiguration();
-    }
-
-
     public
     function createFullBackupObject()
     {
         $this->createMySQLConfigurationObject();
         $this->createConnection();
+        $this->setupSaveModules();
+        $this->setupEncryptionConfiguration();
+
         if (!$this->connection->file_exists($this->save_directory)) {
             $this->connection->mkdir($this->save_directory);
         }
@@ -247,9 +187,9 @@ class RestoreLocalTest extends PHPUnit_Framework_TestCase
             $this->save_modules,     // Array of save modules, minimum one
             $this->encryption_configuration,                  // Encryption configuration or null
             $compress = true,                           // Specify whether to compress backup
-            $compress_threads = 100,                    // Specify # threads for compression
+            $compress_threads = 16,                    // Specify # threads for compression
             $this->parallel_threads,                            // Specify # threads
-            $encryption_threads = 100,                  // Specify # threads for encryption
+            $encryption_threads = 16,                  // Specify # threads for encryption
             $memory = "4G",                             // Specify RAM Usage
             $this->save_directory,           // Specify the directory used to save backup
             $save_directory_prefix = "full_backup_"     // Specify prefix for the full backup name
@@ -278,6 +218,8 @@ class RestoreLocalTest extends PHPUnit_Framework_TestCase
     {
         $this->createMySQLConfigurationObject();
         $this->createConnection();
+        $this->setupSaveModules();
+        $this->setupEncryptionConfiguration();
         $this->chownBackupDirectory();
 
         $this->backup = new \Tradesy\Innobackupex\Backup\Incremental(
@@ -286,9 +228,9 @@ class RestoreLocalTest extends PHPUnit_Framework_TestCase
             $this->save_modules,     // Array of save modules, minimum one
             $this->encryption_configuration,                  // Encryption configuration or null
             $compress = true,                                   // Specify whether to compress backup
-            $compress_threads = 100,                            // Specify # threads for compression
+            $compress_threads = 16,                            // Specify # threads for compression
             $this->parallel_threads,                            // Specify # threads
-            $encryption_threads = 100,                          // Specify # threads for encryption
+            $encryption_threads = 16,                          // Specify # threads for encryption
             $memory = "4G",                                     // Specify RAM Usage
             $this->save_directory,                   // Specify the directory used to save backup
             $save_directory_prefix = "incremental_backup_"      // Specify prefix for to call the full backup
@@ -324,29 +266,27 @@ class RestoreLocalTest extends PHPUnit_Framework_TestCase
 
     }
 
-
     public function createRestoreBackupObject(){
         $this->createMySQLConfigurationObject();
         $this->createConnection();
-        $this->chownBackupDirectory();
-        $BackupInfo = unserialize($this->connection->getFileContents($this->save_directory ."tradesy_percona_backup_info"));
+        $this->setupEncryptionConfiguration();
+        $this->setupRestoreModules();
+        $BackupInfo = unserialize(
+            $this->connection->getFileContents($this->save_directory ."tradesy_percona_backup_info")
+        );
 
         $this->restore = new \Tradesy\Innobackupex\Restore\Mysql(
             $this->mysql_config,
             $this->connection,
-            $this->save_modules,     // Array of save modules, minimum one
+            $this->restore_modules,     // Array of save modules, minimum one
             $this->encryption_configuration,                  // Encryption configuration or null
             $this->parallel_threads,                            // Specify # threads
-            $encryption_threads = 100,                          // Specify # threads for encryption
+            $encryption_threads = 16,                          // Specify # threads for encryption
             $memory = "4G"                                     // Specify RAM Usage
         );
         $this->restore->setBackupInfo($BackupInfo);
     }
-    /**
-     * @depends testFullBackupBackup
-     * @depends testIncrementalBackupBackup
-     * @depends testIncrementalBackupBackupAgain
-     */
+
     public function testRestoreBackup(){
         $this->createRestoreBackupObject();
         $this->mysql_config->setDataDirectory("/var/lib/mysql");
@@ -367,22 +307,22 @@ class RestoreLocalTest extends PHPUnit_Framework_TestCase
         $this->cleanupBackupDirectory();
     }
 
-    private function chownDataDirectory(){
+    protected function chownDataDirectory(){
         $this->mysql_config->setDataOwner("vagrant");
         $this->mysql_config->setDataGroup("vagrant");
         $this->chownDirectory($this->mysql_config->getDataDirectory());
     }
-    private function chownDataDirectoryMysql(){
+    protected function chownDataDirectoryMysql(){
         $this->mysql_config->setDataOwner("mysql");
         $this->mysql_config->setDataGroup("mysql");
         $this->chownDirectory($this->mysql_config->getDataDirectory());
     }
-    private function chownBackupDirectory(){
+    protected function chownBackupDirectory(){
         $this->mysql_config->setDataOwner("vagrant");
         $this->mysql_config->setDataGroup("vagrant");
         $this->chownDirectory($this->save_directory);
     }
-    private function chownDirectory($directory){
+    protected function chownDirectory($directory){
 
         /*
          * chown directory
@@ -393,8 +333,11 @@ class RestoreLocalTest extends PHPUnit_Framework_TestCase
             " " .
             $directory;
         $this->connection->executeCommand($command);
+        $command = "chmod 0777 -R " .
+            $directory;
+        $this->connection->executeCommand($command);
     }
-    private function cleanupBackupDirectory()
+    protected function cleanupBackupDirectory()
     {
         $this->chownBackupDirectory();
         $this->connection->rmdir($this->save_directory);

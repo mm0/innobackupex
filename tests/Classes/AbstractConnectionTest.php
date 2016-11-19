@@ -1,15 +1,12 @@
 <?php
 
-/**
- * Class LocalShellConnectionTest
- */
-class LocalShellConnectionTest extends PHPUnit_Framework_TestCase
+abstract class AbstractConnectionTest extends PHPUnit_Framework_TestCase
 {
-
     /**
      * @var \Tradesy\Innobackupex\ConnectionInterface
      */
-    private $connection;
+    protected $connection;
+
     /**
      *
      */
@@ -20,21 +17,15 @@ class LocalShellConnectionTest extends PHPUnit_Framework_TestCase
     /**
      *
      */
-    public function tearDown()
+    protected function tearDown()
     {
         $this->connection = null;
     }
 
-    /**
-     *
-     */
-    private function createConnection()
-    {
-        $this->connection = new \Tradesy\Innobackupex\LocalShell\Connection();
-        $this->connection->setSudoAll(true);
-    }
+    abstract protected function createConnection();
 
-    public function testLocalShellConnection()
+
+    public function testConnection()
     {
         $this->createConnection();
         $this->connection->verify();

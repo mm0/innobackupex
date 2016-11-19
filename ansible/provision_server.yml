@@ -89,3 +89,6 @@
     }
   - mm0.php-composer
   - mm0.awscli
+  - { role: mm0.gsutil,
+      tags: ['packages','gsutil']
+    }

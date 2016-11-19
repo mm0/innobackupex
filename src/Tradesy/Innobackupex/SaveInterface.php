@@ -16,6 +16,16 @@ interface SaveInterface
      * @return mixed
      */
     public function save($filename);
+    /**
+     * @param string $filename
+     * @return mixed
+     */
+    public function saveFile($filename);
+    /**
+     * @param string $filename
+     * @return mixed
+     */
+    public function saveDirectory($filename);
 
     /**
      * @return mixed

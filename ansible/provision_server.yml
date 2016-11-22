@@ -14,6 +14,7 @@
     - aptitude
     - php5
     - php5-mysql
+    - php5-dev
     - php5-curl
     - libssh2-php
     - python-mysqldb # necessary for ansible mysql module
@@ -91,4 +92,8 @@
   - mm0.awscli
   - { role: mm0.gsutil,
       tags: ['packages','gsutil']
+    }
+  - { role: geerlingguy.php-xdebug,
+      php_extension_conf_paths: ['/etc/php5/cli/conf.d/'],
+      php_enable_webserver: false
     }

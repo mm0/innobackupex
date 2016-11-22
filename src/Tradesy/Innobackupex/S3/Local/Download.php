@@ -88,8 +88,8 @@ class Download implements LoadInterface
     public function load(Info $info, $filename)
     {
         //$filename = $info->getLatestFullBackup();
-        echo "downloading $filename\n\n";
-        echo "saving to: "  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR  ."\n\n";
+        $this->logDebug("downloading $filename\n\n");
+        $this->logDebug("saving to: "  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR  ."\n\n");
         try {
             $this->client->downloadBucket(
                 $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename,
@@ -99,7 +99,7 @@ class Download implements LoadInterface
                     "allow_resumable" => false,
                     "concurrency" => $this->concurrency,
                     "base_dir" => $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename,
-                    "debug" => true
+                    "debug" => false
                 ]
             );
         }catch(\Exception $e){

@@ -3,7 +3,6 @@
 namespace Tradesy\Innobackupex\S3\Remote;
 
 use Tradesy\Innobackupex\LoggingTraits;
-use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\SaveInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
 use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
@@ -70,6 +69,7 @@ class Upload implements SaveInterface
         $this->region = $region;
         $this->concurrency = $concurrency;
         $this->testSave();
+        $this->verify();
     }
 
     /**
@@ -91,7 +91,7 @@ class Upload implements SaveInterface
          */
         $command = $this->binary .
             " --region " . $this->region .
-            " s3 ls " . $this->bucket ." 2>&1 | grep -c NoSuchBucket" ;
+            " s3 ls " . $this->bucket ." 2>&1 | grep -c 'AllAccessDisabled\|NoSuchBucket'" ;
         $response = $this->connection->executeCommand($command);
         if (intval($response->stdout()) == 1) {
             throw new BucketNotFoundException(

@@ -66,6 +66,7 @@ class Upload implements SaveInterface
             "region" => $this->region
         ]);
         $this->testSave();
+        $this->verify();
     }
 
     /**

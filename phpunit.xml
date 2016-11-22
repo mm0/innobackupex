@@ -1,13 +1,31 @@
 <phpunit
-         colors="true"
-         convertErrorsToExceptions="true"
-         convertNoticesToExceptions="true"
-         convertWarningsToExceptions="true"
-         stopOnFailure="false"
-         backupGlobals="false"
-         backupStaticAttributes="false"
-         bootstrap="tests/bootstrap.php">
+        colors="true"
+        convertErrorsToExceptions="true"
+        convertNoticesToExceptions="true"
+        convertWarningsToExceptions="true"
+        stopOnFailure="true"
+        stopOnError="true"
+        verbose="true"
+        backupGlobals="false"
+        backupStaticAttributes="false"
+        bootstrap="tests/bootstrap.php">
 
+    <filter>
+        <whitelist>
+            <directory suffix=".php">src/</directory>
+            <exclude>
+                <directory suffix=".php">src/Tradesy/Innobackupex/GCS/Local/</directory>
+                <directory suffix=".php">src/Tradesy/Innobackupex/Exceptions/</directory>
+            </exclude>
+        </whitelist>
+        <blacklist>
+                <directory>src/Tradesy/Innobackupex/GCS/Local/</directory>
+                <directory>tests</directory>
+                <directory>vendor</directory>
+                <directory>ansible</directory>
+                <directory>Examples</directory>
+          </blacklist>
+    </filter>
     <testsuites>
         <testsuite name="Configurations">
             <directory suffix=".php">./tests/Configurations</directory>

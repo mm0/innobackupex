@@ -65,7 +65,7 @@ class Configuration
      */
     public function verify()
     {
-        $connect = mysqli_connect(
+        $connect = @mysqli_connect(
             $this->host,
             $this->user,
             $this->password,

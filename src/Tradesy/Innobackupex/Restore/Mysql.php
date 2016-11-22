@@ -67,6 +67,7 @@ class Mysql
      */
     protected $parallel_threads;
 
+    protected $array_of_bad_words = array();
     /**
      * Restore constructor.
      * @param Configuration $mysql_configuration
@@ -90,6 +91,8 @@ class Mysql
         $this->parallel_threads = $parallel_threads;
         $this->encryption_configuration = $enc_config;
         $this->memory = $memory;
+        $this->array_of_bad_words[] = $this->getMysqlConfiguration()->getPassword();
+        $this->array_of_bad_words[] = $this->getEncryptionConfiguration()->getEncryptionKey();
     }
 
     /**
@@ -101,7 +104,6 @@ class Mysql
         if ($this->getConnection()->file_exists($directory)) {
             return true;
         }
-
         return false;
     }
 
@@ -127,17 +129,30 @@ class Mysql
     {
         foreach ($this->load_modules as $module) {
             $module->load($this->BackupInfo, $directory);
+            $dest_path = $this->BackupInfo->getBaseBackupDirectory() .
+                DIRECTORY_SEPARATOR .
+                $directory;
+            $this->getConnection()->recursivelyChownDirectory(
+                $dest_path,
+                $this->getMysqlConfiguration()->getDataOwner(),
+                $this->getMysqlConfiguration()->getDataGroup(),
+                0755
+            );
 
             // don't proceed to next module since already loaded
-            if ($this->directoryOrFileExists($this->BackupInfo->getBaseBackupDirectory() .
-                DIRECTORY_SEPARATOR .
-                $directory)
+            if ($this->directoryOrFileExists($dest_path)
             ) {
                 break;
             }
         }
     }
 
+    public function getBackupArray(){
+        return array_merge(
+            $this->BackupInfo->getIncrementalBackups(),
+            [$this->BackupInfo->getLatestFullBackup()]
+        );
+    }
     /**
      * @throws MySQLDirectoryExistsException
      */
@@ -158,10 +173,7 @@ class Mysql
         /*
          * Get all directories associated with complete backup (full + incrementals) in chronological order
          */
-        $dirs = array_merge(
-            $this->BackupInfo->getIncrementalBackups(),
-            [$this->BackupInfo->getLatestFullBackup()]
-        );
+        $dirs = $this->getBackupArray();
         /*
          * Ensure backups are present on server
          *  by this point by attempting to download via load_modules unless already present

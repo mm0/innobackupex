@@ -2,13 +2,15 @@
 
 namespace Tradesy\Innobackupex\S3\Remote;
 
-use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
 use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
+use \Tradesy\Innobackupex\LoggingTraits;
 
 class Download implements LoadInterface {
+
+    use LoggingTraits;
 
     protected $connection;
     protected $bucket;
@@ -55,7 +57,7 @@ class Download implements LoadInterface {
         }
         $command = $this->binary .
             " --region " . $this->region .
-            " s3 ls " . $this->bucket ." 2>&1 | grep -c NoSuchBucket" ;
+            " s3 ls " . $this->bucket ." 2>&1 | grep -c 'AllAccessDisabled\|NoSuchBucket'" ;
         $response = $this->connection->executeCommand($command);
         if(intval($response->stdout())==1){
             throw new BucketNotFoundException(
@@ -69,11 +71,13 @@ class Download implements LoadInterface {
 
     public function load( \Tradesy\Innobackupex\Backup\Info $info, $filename)
     {
-        $filename = $info->getLatestFullBackup();
-        # upload compressed file to s3
+        $local_filename = $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename;
+
+        $this->key = DIRECTORY_SEPARATOR . $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename;
         $command = $this->binary 
-            ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
+            ." s3 sync s3://" . $this->bucket . $this->key . " $local_filename";
         $this->logDebug($command);
+
         $response = $this->connection->executeCommand(
             $command
         );

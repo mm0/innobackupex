@@ -59,6 +59,7 @@ trait Traits
         }
     }
     public function decryptionRequired($directory){
+        $this->logDebug("Check if Decryption Required for Directory: " . $directory);
         $files = $this->getConnection()->scandir($directory);
         $pattern = '/.*\.xbcrypt$/';
         $matches = preg_grep($pattern,$files);

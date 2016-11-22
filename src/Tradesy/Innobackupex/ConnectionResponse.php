@@ -64,4 +64,8 @@ class ConnectionResponse
         $this->logError($this->stderr());
     }
 
+    public function __toString()
+    {
+        return $this->stdout . "\n" . $this->stderr;
+    }
 }

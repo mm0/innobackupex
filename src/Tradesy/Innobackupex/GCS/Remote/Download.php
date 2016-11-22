@@ -59,7 +59,8 @@ class Download implements LoadInterface
         $bucket,
         $region,
         $concurrency = 10
-    ) {
+    )
+    {
         $this->connection = $connection;
         $this->bucket = $bucket;
         $this->region = $region;
@@ -133,8 +134,8 @@ class Download implements LoadInterface
         $serialized = serialize($info);
 
         $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
-        $command = $this->binary 
-            . " s3 cp /tmp/temporary_backup_info s3://" 
+        $command = $this->binary
+            . " cp /tmp/temporary_backup_info gs://"
             . $this->bucket . "/tradesy_percona_backup_info";
         $this->logInfo("Upload latest backup info to S3 with command: $command");
 
@@ -150,10 +151,16 @@ class Download implements LoadInterface
      */
     public function load(Info $info, $filename)
     {
-        $filename = $info->getLatestFullBackup();
-        # upload compressed file to s3
+        $local_filename = $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename;
+
+        $this->key = DIRECTORY_SEPARATOR . $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename;
+        //  you must create destination directory prior to using gsutil rsync
+
+        $this->logInfo("Creating Directory: " . $local_filename);
+        $this->connection->mkdir($local_filename);
+
         $command = $this->binary
-            . " s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
+            . " -m rsync -r gs://" . $this->bucket . $this->key . " $local_filename";
         $this->logInfo($command);
         $response = $this->connection->executeCommand(
             $command

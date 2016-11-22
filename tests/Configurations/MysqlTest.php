@@ -96,4 +96,11 @@ class MysqlTest extends \PHPUnit_Framework_TestCase
 
     }
 
+    public function testMysqlConnectionException(){
+        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\MySQLConnectionException::class);
+        $this->mysql_port=22;
+        $this->createMySQLConfigurationObject();
+        $this->mysql_config->verify();
+    }
+
 }

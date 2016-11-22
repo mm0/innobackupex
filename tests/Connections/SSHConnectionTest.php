@@ -65,4 +65,36 @@ class SSHConnectionTest extends \AbstractConnectionTest
         );
         $this->connection->setSudoAll(true);
     }
+
+    public function testSSHServerNotListeningException(){
+        $this->port = 65001;
+        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\ServerNotListeningException::class);
+        $this->setUp();
+        $this->createConnection();
+    }
+
+    public function testSSHCredentialsInvalid(){
+        $this->user = "fakeuser";
+        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\SSH2AuthenticationException::class);
+        $this->setUp();
+        $this->createConnection();
+    }
+
+    public function testGetConnectionException(){
+        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\ServerNotListeningException::class);
+        $this->port = 65001;
+
+        $this->setUp();
+        $a =  new \Tradesy\Innobackupex\SSH\Connection(
+            $this->ssh_configuration
+        );
+        $reflection = new \ReflectionClass($a);
+        $reflection_property = $reflection->getProperty('connection');
+        $reflection_property->setAccessible(true);
+
+        $reflection_property->setValue($a, false);
+        $a->
+        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\SSH2ConnectionException::class);
+        $a->getConnection();
+    }
 }

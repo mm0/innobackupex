@@ -61,4 +61,21 @@ class SSHConnectionWithGCSSModuleTest extends \AbstractFullBackupThenRestoreTest
         );
     }
 
+    /*
+     * Called prior to restoration.
+     * We want to remove any local backups prior to testing restoration with non-null Restore Modules
+     */
+    public function cleanupLocal()
+    {
+        parent::cleanupLocal();
+        $info = $this->restore->getBackupInfo();
+
+        foreach ($this->restore->getBackupArray() as $directory) {
+            $backup_path = $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $directory;
+            // directory should exist only if full test suite ran, might not exist if running restore test by itself
+            $this->connection->file_exists($backup_path);
+            $this->connection->rmdir($backup_path);
+            $this->assertFalse($this->connection->file_exists($backup_path));
+        }
+    }
 }

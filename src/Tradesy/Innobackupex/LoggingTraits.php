@@ -12,6 +12,7 @@ use Monolog\Handler\StreamHandler;
 /**
  * Class LoggingTraits
  * @package Tradesy\Innobackupex
+ *
  */
 trait LoggingTraits
 {
@@ -56,8 +57,17 @@ trait LoggingTraits
     {
         if(strlen($message)) {
             $log = new Logger('Tradesy\Innobackupex');
-            $log->pushHandler(new StreamHandler("php://stderr",Logger::ERROR));
-            $log->log(Logger::toMonologLevel($severity), $message);
+            $log->pushHandler(new StreamHandler("php://stderr",Logger::EMERGENCY));
+            $log->pushHandler(new StreamHandler("/dev/null",Logger::DEBUG));
+            $log->log(Logger::toMonologLevel($severity), self::sanitize($message));
         }
+    }
+
+    public function sanitize($message){
+        $sanitize_string = "***REDACTED***";
+        if(property_exists($this,"array_of_bad_words") && is_array($this->array_of_bad_words) && count($this->array_of_bad_words))
+            return str_replace($this->array_of_bad_words, $sanitize_string,$message);
+        else
+            return $message;
     }
 }

@@ -37,6 +37,22 @@ class Configuration
     protected $encryption_key_file;
 
     /**
+     * @return string
+     */
+    public function getEncryptionKey()
+    {
+        return $this->encryption_key;
+    }
+
+    /**
+     * @param string $encryption_key
+     */
+    public function setEncryptionKey($encryption_key)
+    {
+        $this->encryption_key = $encryption_key;
+    }
+
+    /**
      * @var array
      */
     protected static $supported_algorithms = array(

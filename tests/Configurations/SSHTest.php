@@ -54,9 +54,13 @@ class SSHTest extends \PHPUnit_Framework_TestCase
 
         $this->private_key = "/FAKEFILE";
         $this->setupSSHConfiguration();
-
     }
 
+    public function testSSHFileNotReadable(){
+        $this->public_key = "/root/";
+        $this->setExpectedException(\Tradesy\Innobackupex\Exceptions\FileNotReadableException::class);
+        $this->setupSSHConfiguration();
+    }
     public function testSSHConfigurationParams()
     {
         $this->assertEquals($this->ip_address, $this->ssh_configuration->host());

@@ -283,12 +283,22 @@ When ready, simply call the restore method.  All archives will be downloaded via
 15 1-23 * * * /usr/bin/php /var/cli/mysql_backups/CreateIncrementalBackup.php >> /var/log/cron/mysql_backups.log 2>&1
 ```
  
-#### For more examples, please see the `./Examples` directory
+#### For more examples, please see the `./Examples` directory or Tests
  
  
 ### Testing
 
+Configuration for AWS/GCS (Optional): 
 
+    You must configure your aws cli by adding api key credentials to:
+      /home/vagrant/.aws/boto
+      
+    and configure gsutil by running 
+        gsutil configure
+        
+     You may have to update tests to reference personal buckets as well.
+        
+        
 Start Vagrant:
 
 ```vagrant up```
@@ -314,7 +324,13 @@ Run PHPUnit
 `./vendor/bin/phpunit -v --debug`
 
 
-To Reset the Database after failed test suite:
+To see full test coverage, run:
+
+    ./vendor/bin/phpunit --debug --verbose  --coverage-html html
+    
+Currently at ~80% Test Coverage, 87.5% with GCS Local Module excluded
+
+####To Reset the Database after failed test suite:
 
 
 On Host: 
@@ -326,9 +342,16 @@ vagrant ssh -c 'sudo rm -rf /var/lib/mysql'
 vagrant provision --provision-with reset_mysql
 ```
  
+## Known Bugs
+
+GCS Local Module (PHP SDK) Doesn't Work.  This is due to the utilization of `file_get/put_contents` which is unstable for large files.  Please use `GCS\Remote\Upload|Download` Modules instead.
+
 ## TODO
 
-GCS Local Module  (remote works)
+* Document usage and implement configurable logging (Monolog).
+* Add more Modules 
+* Add tests for unencrypted and uncompressed (flat) backups
+* Test against non-percona MySQL
 
 
 ## License

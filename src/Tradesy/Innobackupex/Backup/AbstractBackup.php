@@ -88,6 +88,7 @@ abstract class AbstractBackup
      */
     protected $BackupInfo;
 
+    protected $array_of_bad_words = array();
     /**
      * AbstractBackup constructor.
      * @param Configuration $mysql_configuration
@@ -127,7 +128,8 @@ abstract class AbstractBackup
         $this->base_backup_directory = $base_backup_directory;
         $this->save_directory_prefix = $save_directory_prefix;
         $this->mysql_configuration->verify();
-
+        $this->array_of_bad_words[] = $this->getMysqlConfiguration()->getPassword();
+        $this->array_of_bad_words[] = $this->getEncryptionConfiguration()->getEncryptionKey();
     }
 
     /**

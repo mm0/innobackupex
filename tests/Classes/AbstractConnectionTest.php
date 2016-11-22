@@ -49,6 +49,9 @@ abstract class AbstractConnectionTest extends PHPUnit_Framework_TestCase
         $this->assertEquals("sudo " . $command, $response->command());
         $this->assertEquals("root", $response->stdout());
 
+        // explicit test of ConnectionResponse::showOutput()
+        $response->showOutput();
+
         $this->connection->setSudoAll(false);
         $random = substr(md5(rand()), 0, 7);
         $contents = "unit_test" . $random;
@@ -65,5 +68,26 @@ abstract class AbstractConnectionTest extends PHPUnit_Framework_TestCase
         $this->assertNotFalse($scan);
 
         $this->assertTrue($this->connection->mkdir($tmp_file . "dir"));
+    }
+
+    public function testRemoveDirectory(){
+        $this->createConnection();
+
+        $directory = $this->connection->getTemporaryDirectoryPath(). "/fakedir";
+        $this->assertFalse($this->connection->file_exists($directory));
+        $this->connection->mkdir($directory);
+        $this->assertTrue($this->connection->file_exists($directory));
+        $this->connection->rmdir($directory);
+        $this->assertFalse($this->connection->file_exists($directory));
+    }
+//
+//    public function testGetConnection(){
+//        $this->createConnection();
+//        $this->assertEquals($this->connection,$this->connection->getConnection());
+//    }
+
+    public function testFileNotExistsFileContents(){
+        $this->createConnection();
+        $this->assertEmpty($this->connection->getFileContents("/tmp/fakefilerandomtest"));
     }
 }

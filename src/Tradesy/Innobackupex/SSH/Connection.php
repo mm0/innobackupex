@@ -18,7 +18,7 @@ use RecursiveDirectoryIterator;
 class Connection implements ConnectionInterface
 {
     use LoggingTraits;
-    
+
     /**
      * @var Configuration
      */
@@ -37,6 +37,9 @@ class Connection implements ConnectionInterface
      */
     protected $sudo_all = false;
 
+    protected $sftp_link = null;
+
+    protected $array_of_bad_words = array();
     /**
      * @return boolean
      */
@@ -57,6 +60,7 @@ class Connection implements ConnectionInterface
     {
         $this->config = $config;
         $this->verify();
+        $this->array_of_bad_words[] = $this->config->passphrase();
     }
 
     /**
@@ -76,7 +80,7 @@ class Connection implements ConnectionInterface
         if ($this->authenticated && !$force_reconnect) {
             return $this->connection;
         }
-        $this->connection = ssh2_connect(
+        $this->connection = @ssh2_connect(
             $this->config->host(),
             $this->config->port(),
             $this->config->options()
@@ -88,6 +92,8 @@ class Connection implements ConnectionInterface
                 0
             );
         }
+
+        $this->sftp_link= ssh2_sftp($this->connection);
 
         return $this->connection;
     }
@@ -125,7 +131,7 @@ class Connection implements ConnectionInterface
     {
         $temp_file = tempnam($this->getTemporaryDirectoryPath(), "");
         $this->logDebug("Temp filename generated: " . $temp_file);
-        if (ssh2_scp_recv($this->getConnection(), $file, $temp_file)) {
+        if (@ssh2_scp_recv($this->getConnection(), $file, $temp_file)) {
             $contents = file_get_contents($temp_file);
         } else {
             $contents = "";
@@ -167,7 +173,7 @@ class Connection implements ConnectionInterface
     function verifyCredentials()
     {
 
-        $resource = ssh2_auth_pubkey_file(
+        $resource = @ssh2_auth_pubkey_file(
             $this->getConnection(),
             $this->config->user(),
             $this->config->publicKey(),
@@ -227,9 +233,8 @@ class Connection implements ConnectionInterface
     public function file_exists($file)
     {
         // Note: This might cause segfault if file doesn't exist due to ssh2 lib bug
-        $sftp = ssh2_sftp($this->getConnection());
-
-        return file_exists('ssh2.sftp://' . $sftp . $file);
+        clearstatcache();
+        return file_exists($this->sftp_path($file));
     }
 
     /**
@@ -238,9 +243,8 @@ class Connection implements ConnectionInterface
      */
     public function scandir($directory)
     {
-        $sftp = ssh2_sftp($this->getConnection());
-
-        return scandir('ssh2.sftp://' . $sftp . $directory);
+        clearstatcache();
+        return @scandir($this->sftp_path($directory));
     }
 
     /**
@@ -249,8 +253,8 @@ class Connection implements ConnectionInterface
      */
     public function mkdir($directory)
     {
-        $sftp = ssh2_sftp($this->getConnection());
-        return mkdir('ssh2.sftp://' . $sftp . $directory);
+        clearstatcache();
+        return ssh2_sftp_mkdir($this->sftp_link, $directory);
     }
 
     /**
@@ -259,10 +263,89 @@ class Connection implements ConnectionInterface
      */
     public function rmdir($directory)
     {
-        $sftp = ssh2_sftp($this->getConnection());
-        return ssh2_sftp_rmdir($sftp,$directory);
+        $this->delete($directory, true);
+        clearstatcache();
     }
-    public function recursivelyChownDirectory($directory, $owner, $group, $mode){
+
+    public function delete($file, $recursive, $type = false){
+        if ( 'f' == $type || $this->is_file($file) )
+            return ssh2_sftp_unlink($this->sftp_link, $file);
+        if ( ! $recursive )
+            return ssh2_sftp_rmdir($this->sftp_link, $file);
+        $filelist = $this->dirlist($file);
+        if ( is_array($filelist) ) {
+            foreach ( $filelist as $filename => $fileinfo) {
+                $this->delete($file . '/' . $filename, $recursive, $fileinfo['type']);
+            }
+        }
+        return ssh2_sftp_rmdir($this->sftp_link, $file);
+    }
+
+    public function dirlist($path, $include_hidden = true, $recursive = false)
+    {
+        if ($this->is_file($path)) {
+            $limit_file = basename($path);
+            $path = dirname($path);
+        } else {
+            $limit_file = false;
+        }
+
+        if (!$this->is_dir($path))
+            return false;
+
+        $ret = array();
+        $dir = @dir($this->sftp_path($path));
+
+        if (!$dir)
+            return false;
+
+        while (false !== ($entry = $dir->read())) {
+            $struc = array();
+            $struc['name'] = $entry;
+
+            if ('.' == $struc['name'] || '..' == $struc['name'])
+                continue; //Do not care about these folders.
+
+            if (!$include_hidden && '.' == $struc['name'][0])
+                continue;
+
+            if ($limit_file && $struc['name'] != $limit_file)
+                continue;
+
+            $struc['type'] = $this->is_dir($path . '/' . $entry) ? 'd' : 'f';
+
+            if ('d' == $struc['type']) {
+                if ($recursive)
+                    $struc['files'] = $this->dirlist($path . '/' . $struc['name'], $include_hidden, $recursive);
+                else
+                    $struc['files'] = array();
+            }
+
+            $ret[$struc['name']] = $struc;
+        }
+        $dir->close();
+        unset($dir);
+        return $ret;
+    }
+    public function sftp_path( $path ) {
+        if ( '/' === $path ) {
+            $path = '/./';
+        }
+        if($this->sftp_link == null)
+            $this->sftp_link= ssh2_sftp($this->getConnection());
+
+        return 'ssh2.sftp://' . $this->sftp_link . '/' . ltrim( $path, '/' );
+    }
+    public function is_file($file) {
+        clearstatcache();
+        return is_file( $this->sftp_path( $file ) );
+    }
+    public function is_dir($path) {
+        clearstatcache();
+        return is_dir( $this->sftp_path( $path ) );
+    }
+    public function recursivelyChownDirectory($directory, $owner, $group, $mode)
+    {
         $this->executeCommand("chown -R $owner:$group $directory");
         $this->executeCommand("chmod -R $mode $directory");
     }

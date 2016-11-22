@@ -79,7 +79,7 @@ class Upload implements SaveInterface
     public
     function save($filename)
     {
-        $uploader = UploadBuilder::newInstance()
+        $uploader = \UploadBuilder::newInstance()
             ->setClient($this->client)
             ->setSource($this->source)
             ->setBucket($this->bucket)

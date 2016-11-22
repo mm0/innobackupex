@@ -48,4 +48,23 @@ class LocalConnectionWithGCSModuleTest extends \AbstractFullBackupThenRestoreTes
             )
         );
     }
+
+    /*
+     * Called prior to restoration.
+     * We want to remove any local backups prior to testing restoration with non-null Restore Modules
+     */
+    public function cleanupLocal()
+    {
+        parent::cleanupLocal();
+        $info = $this->restore->getBackupInfo();
+
+        foreach ($this->restore->getBackupArray() as $directory) {
+            $backup_path = $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $directory;
+            echo $backup_path;
+            // directory should exist
+            $this->assertTrue($this->connection->file_exists($backup_path));
+            $this->connection->rmdir($backup_path);
+            $this->assertFalse($this->connection->file_exists($backup_path));
+        }
+    }
 }

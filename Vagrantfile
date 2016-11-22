@@ -81,7 +81,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     ansible.playbook        = ansible_repo_directory+"provision_server.yml"
   end
 
-  config.vm.provision "reset_mysql", type: "ansible" do |ansible|
+  config.vm.provision "reset_mysql", run: "never", type: "ansible" do |ansible|
     ansible.extra_vars      = { target: ansible_host, ansible_ssh_user: "vagrant", server_hostname: hostname }
     ansible.inventory_path  = ansible_inventory_file
     ansible.verbose         = "v"

@@ -2,6 +2,7 @@
 
 namespace Tradesy\Innobackupex\GCS\Remote;
 
+use Tradesy\Innobackupex\LogEntry;
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\SaveInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
@@ -54,7 +55,7 @@ class Upload implements SaveInterface {
         }
         $command = $this->binary .
                     " ls -b gs://" . $this->bucket . " | grep -c " . $this->bucket;
-        echo $command;
+        LogEntry::logEntry($command);
         $response = $this->connection->executeCommand($command);
         if(intval($response->stdout())==0){
             throw new BucketNotFoundException(
@@ -72,12 +73,12 @@ class Upload implements SaveInterface {
             " -m rsync -r  $filename gs://" .
             $this->bucket . "/" . 
             $this->key;
-        echo $command;
+        LogEntry::logEntry($command);
         $response = $this->connection->executeCommand(
             $command
         );
-        echo $response->stdout();
-        echo $response->stderr();
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
 
     }
     public function cleanup()
@@ -100,11 +101,11 @@ class Upload implements SaveInterface {
             " cp $file gs://" . $this->bucket .
             DIRECTORY_SEPARATOR.
             "$filename";
-        echo "Upload latest backup info to GCS with command: $command \n";
+        LogEntry::logEntry('Upload latest backup info to GCS with command: ' . $command);
 
         $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
         $command = $this->binary .
             " cp $file gs://" . $this->bucket .
             DIRECTORY_SEPARATOR .
@@ -112,8 +113,8 @@ class Upload implements SaveInterface {
             DIRECTORY_SEPARATOR .
             "$filename";
         $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
     }
 
     public function verify()

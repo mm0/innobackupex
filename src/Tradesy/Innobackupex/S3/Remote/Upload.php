@@ -2,6 +2,7 @@
 
 namespace Tradesy\Innobackupex\S3\Remote;
 
+use Tradesy\Innobackupex\LogEntry;
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\SaveInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
@@ -56,7 +57,7 @@ class Upload implements SaveInterface {
         $command = $this->binary .
                     " --region " . $this->region .
                     " s3 ls | grep -c " . $this->bucket;
-        echo $command;
+        LogEntry::logEntry($command);
         $response = $this->connection->executeCommand($command);
         if(intval($response->stdout())==0){
             throw new BucketNotFoundException(
@@ -75,21 +76,16 @@ class Upload implements SaveInterface {
             $this->bucket . 
             "/" . 
             $this->key;
-        echo $command;
+        LogEntry::logEntry($command);
         $response = $this->connection->executeCommand(
             $command
         );
-        echo $response->stdout();
-        echo $response->stderr();
-
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
     }
+
     public function cleanup()
     {
-        /* $command = "sudo rm -f " . $this->getFullPathToBackup();
-        return $this->connection->executeCommand(
-            $command
-        );
-        */
     }
 
     public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info, $filename){
@@ -103,11 +99,12 @@ class Upload implements SaveInterface {
             " s3 cp $file s3://" . $this->bucket .
             DIRECTORY_SEPARATOR .
             $filename;
-        echo "Upload latest backup info to S3 with command: $command \n";
+        LogEntry::logEntry('Upload latest backup info to S3 with command: ' . $command);
 
         $response = $this->connection->executeCommand($command,true);
-        echo $response->stdout();
-        echo $response->stderr();
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
+
         $command = $this->binary .
             " s3 cp $file s3://" . $this->bucket .
             DIRECTORY_SEPARATOR .
@@ -115,8 +112,8 @@ class Upload implements SaveInterface {
             DIRECTORY_SEPARATOR .
             "$filename";
         $response = $this->connection->executeCommand($command,true);
-        echo $response->stdout();
-        echo $response->stderr();
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
     }
 
     public function verify()

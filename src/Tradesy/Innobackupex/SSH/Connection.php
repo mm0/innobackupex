@@ -6,6 +6,7 @@ use Tradesy\Innobackupex\Exceptions\SSH2AuthenticationException;
 use Tradesy\Innobackupex\Exceptions\ServerNotListeningException;
 use Tradesy\Innobackupex\Exceptions\SSH2ConnectionException;
 use Tradesy\Innobackupex\ConnectionResponse;
+use Tradesy\Innobackupex\LogEntry;
 
 /**
  * Class Connection
@@ -115,7 +116,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     public function getFileContents($file)
     {
         $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
-        echo "temp" . $temp_file;
+        LogEntry::logEntry('Temp file: ' . $temp_file);
         if(ssh2_scp_recv($this->getConnection(), $file, $temp_file)){
             $contents = file_get_contents($temp_file);
         }else{
@@ -140,7 +141,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      */
     public function writeFileContents($file, $contents, $mode=0644)
     {
-        echo "Writing file: " . $file;
+        LogEntry::logEntry('Writing file: ' . $file);
         $temp_file = tempnam($this->getTemporaryDirectoryPath(),"");
         file_put_contents($temp_file,$contents);
         ssh2_scp_send($this->getConnection(), $temp_file, $file, $mode);

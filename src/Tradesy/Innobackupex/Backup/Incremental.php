@@ -2,6 +2,8 @@
 
 namespace Tradesy\Innobackupex\Backup;
 
+use Tradesy\Innobackupex\LogEntry;
+
 /**
  * Class Incremental
  * @package Tradesy\Innobackupex\Backup
@@ -35,33 +37,51 @@ class Incremental extends AbstractBackup
                 $this->BackupInfo->getLatestIncrementalBackup());
 
         $this->decryptAndDecompressBackups([$basedir]);
-        
+
+        $encrypt_text = '';
+        // Create a random string longer than key so it will not replace any text if not found.
+        $encryption_key = substr(
+            str_shuffle(
+                str_repeat(
+                    $x = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', ceil(45/strlen($x))
+                )
+            ), 1, 45);
+
+        if ($this->getEncryptionConfiguration() instanceof $enc_class) {
+            $encrypt_text = $this->getEncryptionConfiguration()->getConfigurationString() .
+                " --encrypt-threads=" . $this->encrypt_threads;
+            $encryption_key = $this->getEncryptionConfiguration()->getKey();
+        }
+
         $command = "innobackupex " .
-            " --user=" . $user .
-            " --password=" . $password .
+            " --user={MYSQL_USER}" . 
+            " --password={MYSQL_PASSWORD}" .
             " --host=" . $host .
             " --port=" . $port .
             " --parallel 100" .
             " --no-timestamp" .
             ($this->getCompress() ?
-                " --compress  --compress-threads=" . $this->compress_threads : "") .
-            (($this->getEncryptionConfiguration() instanceof $enc_class) ?
-                $this->getEncryptionConfiguration()->getConfigurationString() .
-                " --encrypt-threads=" . $this->encrypt_threads : "" ).
+                " --compress --compress-threads=" . $this->compress_threads : "") .
+            $encrypt_text .
             " --incremental " .
             $this->getFullPathToBackup() .
             " --incremental-basedir=" .
             $basedir;
-        echo "Backup Command: $command \n";
+
+        LogEntry::logEntry('Backup Command: ' . str_replace($encryption_key, '********', $command));
+
+        $command = str_replace_array('MYSQL_USER', $user, $command);
+        $command = str_replace_array('MYSQL_PASSWORD', $password, $command);
+        
         $response = $this->getConnection()->executeCommand($command);
 
-        echo $response->stdout() . "\n";
-        echo $response->stderr() . "\n";
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
     }
 
     public function SaveBackupInfo()
     {
-        echo "Backup info save to home directory\n";
+        LogEntry::logEntry('Backup info save to home directory');
         $this->BackupInfo->addIncrementalBackup(
             $this->getRelativebackupdirectory()
         );

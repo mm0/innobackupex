@@ -3,6 +3,7 @@
 namespace Tradesy\Innobackupex\Backup;
 use \Tradesy\Innobackupex\Backup\AbstractBackup;
 use \Tradesy\Innobackupex\Backup\Info;
+use Tradesy\Innobackupex\LogEntry;
 
 
 /**
@@ -30,31 +31,48 @@ class Full extends AbstractBackup
          * TODO: --compress-threads=
          * TODO: --parallel
          */
+
+        $encrypt_text = '';
+        // Create a random string longer than key so it will not replace any text if not found.
+        $encryption_key = substr(
+            str_shuffle(
+                str_repeat(
+                    $x = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', ceil(45/strlen($x))
+                )
+            ), 1, 45);
+
+        if ($this->getEncryptionConfiguration() instanceof $enc_class) {
+            $encrypt_text = $this->getEncryptionConfiguration()->getConfigurationString() .
+                " --encrypt-threads=" . $this->encrypt_threads;
+            $encryption_key = $this->getEncryptionConfiguration()->getKey();
+        }
+
         $command =
             "innobackupex" .
-            " --user=" . $user .
-            " --password=" . $password .
+            " --user={MYSQL_USER}" .
+            " --password={MYSQL_PASSWORD}" .
             " --host=" . $host .
             " --port=" . $port .
             " --parallel 100" .
             " --no-timestamp" .
             ($this->getCompress() ? 
                 " --compress  --compress-threads=" . $this->compress_threads : "") .
-            (($this->getEncryptionConfiguration() instanceof $enc_class) ?
-                $this->getEncryptionConfiguration()->getConfigurationString() .
-                " --encrypt-threads=" . $this->encrypt_threads : "" ).
-            " " . $directory ;
+            $encrypt_text . ' '  . $directory;
 
-        echo "Backup Command: $command \n";
+        LogEntry::logEntry('Backup Command: ' . str_replace($encryption_key, '********', $command));
+
+        $command = str_replace('{MYSQL_USER}', $user, $command);
+        $command = str_replace('{MYSQL_PASSWORD}', $password, $command);
+
         $response = $this->getConnection()->executeCommand($command);
 
-        echo $response->stdout() . "\n";
-        echo $response->stderr() . "\n";
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
     }
 
     public function SaveBackupInfo()
     {
-        echo "Backup info save to home directory\n";
+        LogEntry::logEntry('Backup info save to home directory');
         $enc_class = "\Tradesy\Innobackupex\Encryption\Configuration";
         $this->BackupInfo->setBaseBackupDirectory($this->getBasebackupDirectory());
         $this->BackupInfo->setLatestFullBackup($this->getRelativebackupdirectory());

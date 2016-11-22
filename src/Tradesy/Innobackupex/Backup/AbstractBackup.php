@@ -2,6 +2,7 @@
 
 namespace Tradesy\Innobackupex\Backup;
 
+use Tradesy\Innobackupex\LogEntry;
 use Tradesy\Innobackupex\MySQL\Configuration;
 use Tradesy\Innobackupex\Encryption\Configuration as EncryptionConfiguration;
 use Tradesy\Innobackupex\ConnectionInterface;
@@ -206,7 +207,6 @@ abstract class AbstractBackup
         return $this->getBasebackupDirectory() . DIRECTORY_SEPARATOR . $this->getRelativebackupdirectory();
     }
 
-
     /**
      * @return string
      */
@@ -314,20 +314,24 @@ abstract class AbstractBackup
         $this->end_date = $end_date;
     }
 
+    /**
+     * Sets the backup start time
+     */
     public function start()
     {
         $this->setStartDate(time());
         $this->setRelativebackupdirectory();
-        echo "\nStarting Backup: " . date("F j, Y, g:i a", $this->getStartDate()) . "\n";
+        LogEntry::logEntry('Starting Backup');;
     }
 
+    /**
+     * Sets the backup ending time
+     */
     public function end()
     {
         $this->setEndDate(time());
-        echo "\nBackup Finished: " . date("F j, Y, g:i a", $this->getEndDate()) . "\n";
-
+        LogEntry::logEntry('Backup Finished');
     }
-
 
     public function test_innobackupex_exist()
     {
@@ -344,12 +348,15 @@ abstract class AbstractBackup
                 0
             );
         } else {
-            echo 'Innobackupex located: ' . $response->stdout() . "\n";
+            LogEntry::logEntry('Innobackupex located: ' . $response->stdout());
         }
     }
-    
 
-
+    /**
+     * Perform the backup
+     *
+     * @throws InnobackupexException
+     */
     public function Backup()
     {
         $this->test_innobackupex_exist();
@@ -357,7 +364,7 @@ abstract class AbstractBackup
         $this->PerformBackup();
         $this->SaveBackupInfo();
         //  $this->ApplyLog();
-        echo "Saved to " . $this->getFullPathToBackup() . "\n";
+        LogEntry::logEntry('Saved to ' . $this->getFullPathToBackup());
         foreach ($this->save_modules as $saveModule) {
 
             $saveModule->setKey(
@@ -382,18 +389,30 @@ abstract class AbstractBackup
         $this->end();
     }
 
+    /**
+     * Write the contents passed to the given destination file
+     *
+     * @param $dest
+     * @param $contents
+     * @param int $mode
+     */
     public function writeFile($dest, $contents, $mode = 0644)
     {
         $this->connection->writeFileContents($dest, $contents, $mode);
     }
 
+    /**
+     * Fetches the backup information
+     *
+     * @return Info
+     */
     public function fetchBackupInfo()
     {
         $remote_file = $this->getBasebackupDirectory() . DIRECTORY_SEPARATOR .
             $this->getBackupInfoFilename();
         if ($this->getConnection()->file_exists($remote_file)) {
             $file_contents = $this->getConnection()->getFileContents($remote_file);
-            echo $file_contents;
+            LogEntry::logEntry('Contents from file "' . $remote_file . '": ' . $file_contents);
             $this->BackupInfo = unserialize($file_contents);
             var_dump($this->BackupInfo);
         } else {
@@ -407,12 +426,18 @@ abstract class AbstractBackup
     {
 
     }
+
+    /**
+     * Set the relative backup directory
+     */
     protected function setRelativebackupdirectory()
     {
         $this->relative_backup_directory = $this->getSaveDirectoryPrefix() .
             date("m-j-Y--H-i-s", $this->getStartDate());
     }
+
     abstract function SaveBackupInfo();
 
     abstract function PerformBackup();
+
 }

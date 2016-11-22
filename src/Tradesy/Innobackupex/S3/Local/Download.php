@@ -2,6 +2,7 @@
 
 namespace Tradesy\Innobackupex\S3\Local;
 
+use Tradesy\Innobackupex\LogEntry;
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
@@ -65,8 +66,8 @@ class Download implements LoadInterface
     public function load(\Tradesy\Innobackupex\Backup\Info $info, $filename)
     {
         //$filename = $info->getLatestFullBackup();
-        echo "downloading $filename\n\n";
-        echo "saving to: "  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR  ."\n\n";
+        LogEntry::logEntry('Downloading ' . $filename);
+        LogEntry::logEntry('Saving to: '  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR);
         try {
             $this->client->downloadBucket(
                 $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename,
@@ -80,7 +81,7 @@ class Download implements LoadInterface
                 ]
             );
         }catch(\Exception $e){
-            echo 'exception';
+            LogEntry::logEntry('Exception caught ' . $e->getMessage());
         }
         return;
     }
@@ -91,10 +92,6 @@ class Download implements LoadInterface
 
     public function getBackupInfo($backup_info_filename)
     {
-
-        $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
 
     }
 

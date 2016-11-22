@@ -2,6 +2,7 @@
 
 namespace Tradesy\Innobackupex\GCS\Remote;
 
+use Tradesy\Innobackupex\LogEntry;
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\ConnectionInterface;
 use \Tradesy\Innobackupex\LoadInterface;
@@ -54,7 +55,7 @@ class Download implements LoadInterface {
          */
         $command = $this->binary .
             " ls -b gs://" . $this->bucket . " | grep -c " . $this->bucket;
-        echo $command;
+        LogEntry::logEntry($command);
         $response = $this->connection->executeCommand($command);
         if(intval($response->stdout())==0){
             throw new BucketNotFoundException(
@@ -69,12 +70,12 @@ class Download implements LoadInterface {
     {
         # upload compressed file to s3
         $command = $this->binary ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
-        echo $command;
+        LogEntry::logEntry($command);
         $response = $this->connection->executeCommand(
             $command
         );
-        echo $response->stdout();
-        echo $response->stderr();
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
 
     }
     public function cleanup()
@@ -91,11 +92,11 @@ class Download implements LoadInterface {
 
         $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
         $command = $this->binary . " s3 cp /tmp/temporary_backup_info s3://" . $this->bucket . "/tradesy_percona_backup_info";
-        echo "Upload latest backup info to S3 with command: $command \n";
+        LogEntry::logEntry('Upload latest backup info to S3 with command: ' . $command);
 
         $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
 
     }
     public function load( \Tradesy\Innobackupex\Backup\Info $info, $filename)
@@ -104,21 +105,20 @@ class Download implements LoadInterface {
         # upload compressed file to s3
         $command = $this->binary
             ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
-        echo $command;
+        LogEntry::logEntry($command);
         $response = $this->connection->executeCommand(
             $command
         );
-        echo $response->stdout();
-        echo $response->stderr();
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
 
     }
-    public function getBackupInfo($backup_info_filename){
 
-        $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
+    public function getBackupInfo($backup_info_filename)
+    {
 
     }
+
     public function verify()
     {
 

@@ -2,6 +2,7 @@
 
 namespace Tradesy\Innobackupex\S3\Remote;
 
+use Tradesy\Innobackupex\LogEntry;
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
@@ -56,7 +57,7 @@ class Download implements LoadInterface {
         $command = $this->binary .
                     " --region " . $this->region .
                     " s3 ls | grep -c " . $this->bucket;
-        echo $command;
+        LogEntry::logEntry($command);
         $response = $this->connection->executeCommand($command);
         if(intval($response->stdout())==0){
             throw new BucketNotFoundException(
@@ -74,12 +75,12 @@ class Download implements LoadInterface {
         # upload compressed file to s3
         $command = $this->binary 
             ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
-        echo $command;
+        LogEntry::logEntry($command);
         $response = $this->connection->executeCommand(
             $command
         );
-        echo $response->stdout();
-        echo $response->stderr();
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
 
     }
     public function cleanup()
@@ -91,11 +92,8 @@ class Download implements LoadInterface {
         */
     }
 
-    public function getBackupInfo($backup_info_filename){
-
-        $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
+    public function getBackupInfo($backup_info_filename)
+    {
 
     }
 

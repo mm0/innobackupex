@@ -5,6 +5,7 @@ namespace Tradesy\Innobackupex\S3\Local;
 use \Aws\S3\S3Client;
 use \Aws\S3\MultipartUploader;
 use \Aws\Exception\MultipartUploadException;
+use Tradesy\Innobackupex\LogEntry;
 
 class Upload implements \Tradesy\Innobackupex\SaveInterface
 {
@@ -53,13 +54,13 @@ class Upload implements \Tradesy\Innobackupex\SaveInterface
 
         $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
         $command = $this->binary . " s3 cp /tmp/temporary_backup_info s3://" . $this->bucket . "/tradesy_percona_backup_info";
-        echo "Upload latest backup info to S3 with command: $command \n";
+        LogEntry::logEntry('Upload latest backup info to S3 with command: ' . $command);
 
         $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
-
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
     }
+
     /**
      * @param mixed $key
      */

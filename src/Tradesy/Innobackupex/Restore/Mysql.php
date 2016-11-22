@@ -9,6 +9,7 @@
  */
 namespace Tradesy\Innobackupex\Restore;
 
+use Tradesy\Innobackupex\LogEntry;
 use Tradesy\Innobackupex\MySQL\Configuration;
 use Tradesy\Innobackupex\Encryption\Configuration as EncryptionConfiguration;
 use Tradesy\Innobackupex\ConnectionInterface;
@@ -115,7 +116,7 @@ class Mysql
         $base_dir = $this->BackupInfo->getBaseBackupDirectory();
         $full_dir = $base_dir . DIRECTORY_SEPARATOR . $directory;
         if($this->directoryOrFileExists($full_dir)){
-            echo " full directory found " .$full_dir . "\n";
+            LogEntry::logEntry('Fll directory found ' . $full_dir);
         }else{
             // use loadmodules to restore this backup
             $this->loadBackupDirectoryFromModules($directory);
@@ -205,13 +206,13 @@ class Mysql
         /*
          * Finally Copy Back the directory
          */ 
-        echo "Copying Back mysql backup\n";
+        LogEntry::logEntry('Copying Back mysql backup');
         $this->CopyBack($base_dir . DIRECTORY_SEPARATOR . $this->BackupInfo->getLatestFullBackup());
 
         /*
          * Don't forget to chown the directory
          */
-        echo "Chowning mysql directory \n";
+        LogEntry::logEntry('Chowning mysql directory');
         $this->ChownDirectory();
         
         /*
@@ -233,7 +234,7 @@ class Mysql
      */
     protected function MarkDirectoryAsPrepared($directory)
     {
-        echo "writing $directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file";
+        LogEntry::logEntry(('Writing ' . $directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file);
         $this->getConnection()->writeFileContents($directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file, "");
     }
 
@@ -251,11 +252,11 @@ class Mysql
         if($inc_dir == ""
             && $this->IsDirectoryAlreadyPrepared($full_backup_full_path)){
             // full backup and already prepared
-            echo "\nfull backup and already prepared\n";
+            LogEntry::logEntry('Full backup and already prepared');
             return;
         }
         if($inc_dir != "" && $this->IsDirectoryAlreadyPrepared($inc_backup_full_path)){
-            echo "\n incremental backup and already prepared\n";
+            LogEntry::logEntry('Incremental backup and already prepared');
             return;
         }
         $command = "innobackupex " .
@@ -267,15 +268,15 @@ class Mysql
                 ? " --incremental-dir=" . $inc_backup_full_path
                 : "");
 
-        echo "Backup Command: $command \n";
+        LogEntry::logEntry('Backup Command: ' . $command);
         $response = $this->connection->executeCommand(
             $command, true
         );
 
-        echo $response->stdout() . "\n";
-        echo $response->stderr() . "\n";
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
         // Mark backup
-        echo "Marking backup as already prepared \n";
+        LogEntry::logEntry('Marking backup as already prepared');
         $this->MarkDirectoryAsPrepared((strlen($inc_dir)? $inc_backup_full_path : $full_backup_full_path));
     }
 
@@ -287,11 +288,11 @@ class Mysql
         $command = "innobackupex" .
             " --copy-back $base_dir ";
 
-        echo "Running Command: " . $command . "\n";
+        LogEntry::logEntry('Running Command: ' . $command);
         $response = $this->getConnection()->executeCommand($command);
 
-        echo $response->stdout() . "\n";
-        echo $response->stderr() . "\n";
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
     }
     
     protected function ChownDirectory()
@@ -307,8 +308,8 @@ class Mysql
 
         $response = $this->getConnection()->executeCommand($command);
 
-        echo $response->stdout() . "\n";
-        echo $response->stderr() . "\n";
+        LogEntry::logEntry('STDOUT: ' . $response->stdout());
+        LogEntry::logEntry('STDERR: ' . $response->stderr());
     }
 
     /**
@@ -330,7 +331,7 @@ class Mysql
                  */
                 $loadModule->getBackupInfo($this->getBackupInfoFilename());
                 $loadModule->cleanup();
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 // loading info failed from this module
             }
         }

@@ -2,6 +2,7 @@
 
 namespace Tradesy\Innobackupex\GCS\Local;
 
+use Tradesy\Innobackupex\LogEntry;
 use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
@@ -66,14 +67,14 @@ class Download implements LoadInterface
     public function load(\Tradesy\Innobackupex\Backup\Info $info, $filename)
     {
         //$filename = $info->getLatestFullBackup();
-        echo "downloading $filename\n\n";
-        echo "saving to: "  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR  ."\n\n";
+        LogEntry::logEntry('downloading ' . $filename);
+        LogEntry::logEntry('Saving to: '  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR);
         $service = new \Google_Service_Storage($this->client);
         $object = $service->objects->get( $this->bucket, $filename )->;
         $request = new Google_Http_Request($object['mediaLink'], 'GET');
         $signed_request = $this->client->getAuth()->sign($request);
         $http_request = $this->client->getIo()->makeRequest($signed_request);
-        echo $http_request->getResponseBody();
+        LogEntry::logEntry('Response received: ' . $http_request->getResponseBody());
 
 
         $this->client->downloadBucket(
@@ -94,11 +95,6 @@ class Download implements LoadInterface
 
     public function getBackupInfo($backup_info_filename)
     {
-
-        $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
-
     }
 
     public function verify()

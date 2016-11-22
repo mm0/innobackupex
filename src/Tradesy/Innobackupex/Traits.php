@@ -17,7 +17,7 @@ trait Traits
             $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "");
 
         foreach ($backups as $basedir) {
-            echo "\n\n PROCESSING: " . $basedir . " \n\n\n";
+            LogEntry::logEntry('PROCESSING: ' . $basedir);
             /*
              * Next we have to check if files are encrpyted,
              */
@@ -31,11 +31,11 @@ trait Traits
                     $decryption_string .
                     " --parallel " . $this->parallel_threads .
                     " $basedir";
-                echo "Decrypting command: " . $command;
+                LogEntry::logEntry('Decrypting command: ' . $command);
                 $response = $this->getConnection()->executeCommand($command,true);
 
-                echo $response->stdout() . "\n";
-                echo $response->stderr() . "\n";
+                LogEntry::logEntry('STDOUT: ' . $response->stdout());
+                LogEntry::logEntry('STDERR: ' . $response->stderr());
             }
             /*
              * Now if compressed, decompress
@@ -52,11 +52,11 @@ trait Traits
                     " --decompress" .
                     " --parallel " . $this->parallel_threads .
                     " $basedir";
-                echo "Decompressing command: " . $command;
+                LogEntry::logEntry('Decompressing command: ' . $command);
                 $response = $this->getConnection()->executeCommand($command,true);
 
-                echo $response->stdout() . "\n";
-                echo $response->stderr() . "\n";
+                LogEntry::logEntry('STDOUT: ' . $response->stdout());
+                LogEntry::logEntry('STDERR: ' . $response->stderr());
             }
 
         }

@@ -9,6 +9,9 @@
 
 namespace Tradesy\Innobackupex\Encryption;
 
+use Tradesy\Innobackupex\Exceptions\EncryptionAlgorithmNotSupportedException;
+use Tradesy\Innobackupex\Exceptions\InvalidEncryptionKeyTypeException;
+
 
 /**
  * Class Configuration
@@ -69,16 +72,29 @@ class Configuration
     }
 
     /**
+     * Returns the encryption key for current configuration
+     *
      * @return string
      */
-    public function getConfigurationString(){
-        return " --encrypt=" . $this->algorithm . 
-                " --encrypt-key=" . $this->encryption_key;
+    public function getKey()
+    {
+        return $this->encryption_key;
     }
+
     /**
      * @return string
      */
-    public function getDecryptConfigurationString(){
+    public function getConfigurationString()
+    {
+        return " --encrypt=" . $this->algorithm . 
+                " --encrypt-key=" . $this->encryption_key;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDecryptConfigurationString()
+    {
         return " --decrypt=" . $this->algorithm .
         " --encrypt-key=" . $this->encryption_key;
     }

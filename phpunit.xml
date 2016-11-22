@@ -13,13 +13,10 @@
     <filter>
         <whitelist>
             <directory suffix=".php">src/</directory>
-            <exclude>
-                <directory suffix=".php">src/Tradesy/Innobackupex/GCS/Local/</directory>
-                <directory suffix=".php">src/Tradesy/Innobackupex/Exceptions/</directory>
-            </exclude>
         </whitelist>
         <blacklist>
                 <directory>src/Tradesy/Innobackupex/GCS/Local/</directory>
+                <directory>src/Tradesy/Innobackupex/Exceptions/</directory>
                 <directory>tests</directory>
                 <directory>vendor</directory>
                 <directory>ansible</directory>

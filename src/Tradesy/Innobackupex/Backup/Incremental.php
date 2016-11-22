@@ -70,8 +70,8 @@ class Incremental extends AbstractBackup
 
         LogEntry::logEntry('Backup Command: ' . str_replace($encryption_key, '********', $command));
 
-        $command = str_replace('MYSQL_USER', $user, $command);
-        $command = str_replace('MYSQL_PASSWORD', $password, $command);
+        $command = str_replace('{MYSQL_USER}', $user, $command);
+        $command = str_replace('{MYSQL_PASSWORD}', $password, $command);
         
         $response = $this->getConnection()->executeCommand($command);
 

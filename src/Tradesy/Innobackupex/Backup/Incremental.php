@@ -75,8 +75,8 @@ class Incremental extends AbstractBackup
         
         $response = $this->getConnection()->executeCommand($command);
 
-        LogEntry::logEntry('STDOUT: ' . $response->stdout());
-        LogEntry::logEntry('STDERR: ' . $response->stderr());
+        LogEntry::logEntry('STDOUT: ' . str_replace($encryption_key, '********', $response->stdout()));
+        LogEntry::logEntry('STDERR: ' . str_replace($encryption_key, '********', $response->stderr()));
     }
 
     public function SaveBackupInfo()

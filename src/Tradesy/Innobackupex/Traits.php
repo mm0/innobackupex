@@ -13,8 +13,6 @@ trait Traits
     {
         $class = "\Tradesy\Innobackupex\Encryption\Configuration";
 
-        $decryption_string = (($this->getEncryptionConfiguration() instanceof $class) ?
-            $this->getEncryptionConfiguration()->getDecryptConfigurationString() : "");
 
         foreach ($backups as $basedir) {
             LogEntry::logEntry('PROCESSING: ' . $basedir);
@@ -27,15 +25,30 @@ trait Traits
              */
             if ($this->decryptionRequired($basedir)
             ) {
+                $decryption_string = '';
+                // Create a random string longer than key so it will not replace any text if not found.
+                $encryption_key = substr(
+                    str_shuffle(
+                        str_repeat(
+                            $x = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', ceil(45/strlen($x))
+                        )
+                    ), 1, 45);
+
+                if ($this->getEncryptionConfiguration() instanceof $class) {
+                    $decryption_string = $this->getEncryptionConfiguration()->getDecryptConfigurationString();
+                    $encryption_key = $this->getEncryptionConfiguration()->getKey();
+                }
+
                 $command = "innobackupex " .
                     $decryption_string .
                     " --parallel " . $this->parallel_threads .
                     " $basedir";
-                LogEntry::logEntry('Decrypting command: ' . $command);
+
+                LogEntry::logEntry('Decrypting command: ' . str_replace($encryption_key, '********', $command));
                 $response = $this->getConnection()->executeCommand($command,true);
 
-                LogEntry::logEntry('STDOUT: ' . $response->stdout());
-                LogEntry::logEntry('STDERR: ' . $response->stderr());
+                LogEntry::logEntry('STDOUT: ' . str_replace($encryption_key, '********', $response->stdout()));
+                LogEntry::logEntry('STDERR: ' . str_replace($encryption_key, '********', $response->stderr()));
             }
             /*
              * Now if compressed, decompress

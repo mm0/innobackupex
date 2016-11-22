@@ -322,6 +322,12 @@ Install composer packages:
 
 `composer install --dev`
 
+Create an SSH Key 
+
+`ssh-keygen` ( press enter a few times )
+
+`cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys`
+
 
 Run PHPUnit
 

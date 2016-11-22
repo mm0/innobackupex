@@ -93,7 +93,7 @@
   - { role: mm0.gsutil,
       tags: ['packages','gsutil']
     }
-  - { role: geerlingguy.php-xdebug,
+  - { role: mm0.php-xdebug,
       php_extension_conf_paths: ['/etc/php5/cli/conf.d/'],
       php_enable_webserver: false
     }

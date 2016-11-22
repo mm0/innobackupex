@@ -35,6 +35,10 @@ Include this repository within your composer.json package of your library
 
 Run `composer install`
 
+If you want to test using Vagrant, be sure to install Ansible dependencies:
+
+`ansible-galaxy install -v -r ansible/requirements.yml -p ansible/roles`
+
 
 Configuration
 ---

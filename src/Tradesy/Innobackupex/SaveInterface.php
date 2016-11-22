@@ -2,6 +2,8 @@
 
 namespace Tradesy\Innobackupex;
 
+use Tradesy\Innobackupex\Backup\Info;
+
 /**
  * Interface SaveInterface
  * @package Tradesy\Innobackupex
@@ -10,10 +12,20 @@ interface SaveInterface
 {
 
     /**
-     * @param $filename
+     * @param string $filename
      * @return mixed
      */
     public function save($filename);
+    /**
+     * @param string $filename
+     * @return mixed
+     */
+    public function saveFile($filename);
+    /**
+     * @param string $filename
+     * @return mixed
+     */
+    public function saveDirectory($filename);
 
     /**
      * @return mixed
@@ -35,7 +47,7 @@ interface SaveInterface
      * @param $filename
      * @return mixed
      */
-    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $backupInfo, $filename);
+    public function saveBackupInfo(Info $backupInfo, $filename);
     /**
      * @param mixed $key
      */

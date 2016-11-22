@@ -1,0 +1,99 @@
+# 
+# example:  
+#
+#   ansible-playbook provision_server.yml --extra-vars "target=vagrant server_hostname=HomeSite"
+#
+---
+- hosts: "{{ target }}"
+  gather_facts: true
+  become: yes
+  user: ubuntu
+  vars:
+  - extra_packages_to_install:
+    - build-essential
+    - aptitude
+    - php5
+    - php5-mysql
+    - php5-dev
+    - php5-curl
+    - libssh2-php
+    - python-mysqldb # necessary for ansible mysql module
+  - the_group: ubuntu
+  - the_mysql_users:
+    - name: "root"
+      host: "localhost"
+      password: "password"
+      priv: "*.*:ALL,GRANT"
+    - name: "root"
+      host: "127.0.0.1"
+      password: "password"
+      priv: "*.*:ALL,GRANT"
+    - name: "root"
+      host: "::1"
+      password: "password"
+      priv: "*.*:ALL,GRANT"
+    - name: "dev"
+      host: "localhost"
+      password: "password"
+      priv: "*.*:ALL,GRANT"
+    - name: "dev"
+      host: "127.0.0.1"
+      password: "password"
+      priv: "*.*:ALL,GRANT"
+    - name: "debian-sys-maint"
+      host: "localhost"
+      password: "password"
+      priv: "*.*:ALL,GRANT"
+    - name: "clustercheck"
+      host: "localhost"
+      password: "password"
+      priv: "*.*:SELECT"
+    - name: "sst"
+      host: "localhost"
+      password: "dev-sst-password"
+      priv: "*.*:SELECT"
+  roles:
+  - { role: mm0.baseline, target: "{{ target }}", extra_packages: "{{ extra_packages_to_install }}" }
+  # create 'devs' group 
+  - { role: mm0.group,
+      the_groups: [ 
+        { name: "devs", state: "present"},
+        { name: "nagios", state: "present"}
+      ]
+    }  
+  - mm0.sudo
+  - mm0.bash
+  - mm0.vimrc
+  # create env directory
+  - { role: mm0.touch,
+      owner: "{{ ansible_ssh_user }}",
+      group: "{{ ansible_ssh_user }}",
+      mode: "0644",
+      files: "/var/log/mysql_backup.log"
+  }
+  - { role: mm0.ntp }
+  - { role: mm0.percona-mysql-server,
+      server_id: 12345678,
+      wsrep_cluster_address: "gcomm://127.0.0.1",
+      wsrep_cluster_name:  mysqlcluser,
+      wsrep_sst_auth: "sst:dev-sst-password",
+      only_from: "127.0.0.1",
+      mysql_port: 3306,
+      innodb_log_file_size: "5M",
+      innobase_buffer_pool_size: "1G",
+      clustercheck_port: 9500,
+      wsrep_sync_wait: 0,
+      wsrep_causal_reads: 0,
+      mysql_users: "{{ the_mysql_users }}",
+      mysql_root_password: "password",
+      tags: [ 'reset_mysql' ]
+    }
+  - mm0.php-composer
+  - mm0.awscli
+  - { role: mm0.gsutil,
+      tags: ['packages','gsutil']
+    }
+  - { role: geerlingguy.php-xdebug,
+      php_extension_conf_paths: ['/etc/php5/cli/conf.d/'],
+      php_enable_webserver: false
+    }

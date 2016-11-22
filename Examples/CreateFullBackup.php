@@ -19,13 +19,13 @@ $config = [
         ],
         's3' => [
             'bucket' => 'my-encrypted-s3-mysql-backup-repository',
-            'region' => 'us-east-1',
-            'concurrency' => 100
+            'region' => 'us-west-1',
+            'concurrency' => 16
         ],
         'gcs' => [
             'bucket' => 'my-encrypted-gcs-mysql-backup-repository',
             'region' => 'us-central1',
-            'concurrency' => 100
+            'concurrency' => 16
         ]
     ]
 ];
@@ -63,9 +63,9 @@ $Backup = new \Tradesy\Innobackupex\Backup\Full(
     [$s3_save_module, $google_save_module],     // Array of save modules, minimum one
     $encryption_configuration,                  // Encryption configuration or null
     $compress = true,                           // Specify whether to compress backup
-    $compress_threads = 100,                    // Specify # threads for compression
-    $parallel_threads = 100,                            // Specify # threads
-    $encryption_threads = 100,                  // Specify # threads for encryption
+    $compress_threads = 16,                    // Specify # threads for compression
+    $parallel_threads = 16,                            // Specify # threads
+    $encryption_threads = 16,                  // Specify # threads for encryption
     $memory = "4G",                             // Specify RAM Usage
     $save_directory = "/tmp/backups",           // Specify the directory used to save backup
     $save_directory_prefix = "full_backup_"     // Specify prefix for to call the full backup

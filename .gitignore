@@ -1,4 +1,3 @@
-/vendor/
 # global .gitignore
 # check out https://github.com/github/gitignore
 
@@ -103,3 +102,9 @@ DerivedData/
 
 # Java class files
 *.class
+
+.vagrant
+*.retry
+ansible/roles/*
+vendor
+composer.lock

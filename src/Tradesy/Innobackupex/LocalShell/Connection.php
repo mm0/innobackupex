@@ -3,6 +3,10 @@
 namespace Tradesy\Innobackupex\LocalShell;
 
 use Tradesy\Innobackupex\ConnectionResponse;
+use Tradesy\Innobackupex\Exceptions\ServerNotListeningException;
+use Tradesy\Innobackupex\LoggingTraits;
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
 
 /**
  * Class Connection
@@ -10,6 +14,7 @@ use Tradesy\Innobackupex\ConnectionResponse;
  */
 class Connection implements \Tradesy\Innobackupex\ConnectionInterface
 {
+    use LoggingTraits;
 
     /**
      * @var bool
@@ -32,6 +37,9 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
         $this->sudo_all = $sudo_all;
     }
 
+    /**
+     * Connection constructor.
+     */
     function __construct()
     {
     }
@@ -42,6 +50,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     public function verify()
     {
     }
+
     /**
      * @return resource
      */
@@ -49,16 +58,17 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     {
         return $this;
     }
+
     /**
      * @return ConnectionResponse
      */
-    public function executeCommand($command, $no_sudo = false )
+    public function executeCommand($command, $no_sudo = false)
     {
-        $command = ($this->isSudoAll() && !$no_sudo ? "sudo " : "" ) . $command;
+        $command = ($this->isSudoAll() && !$no_sudo ? "sudo " : "") . $command;
 
         // Hacky way to get stderr, but proc_open seems to block indefinitely
         $tmpfname = tempnam("/tmp", "innobackupex");
-        $stdout = shell_exec($command . " 2>$tmpfname");
+        $stdout = rtrim(shell_exec($command . " 2>$tmpfname"));
         $stderr = file_get_contents($tmpfname);
         unlink($tmpfname);
 
@@ -92,10 +102,10 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      */
     public function getFileContents($file)
     {
-        if($this->file_exists($file)){
+        if ($this->file_exists($file)) {
             $contents = file_get_contents($file);
-        }else{
-            $contents ="";
+        } else {
+            $contents = "";
         }
         return $contents;
     }
@@ -103,7 +113,8 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     /**
      * @return string
      */
-    public function getTemporaryDirectoryPath(){
+    public function getTemporaryDirectoryPath()
+    {
         return "/tmp/";
     }
 
@@ -111,19 +122,20 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      * @param string $file
      * @param string $contents
      * @param int $mode
+     * @return
      */
-    public function writeFileContents($file, $contents, $mode=0644)
+    public function writeFileContents($file, $contents, $mode = 0644)
     {
-        file_put_contents($file,$contents);
+        return boolval(file_put_contents($file, $contents));
     }
-    
 
     /**
      * @param string $file
      * @return boolean
      */
     public
-    function file_exists($file){
+    function file_exists($file)
+    {
         return file_exists($file);
     }
 
@@ -131,7 +143,49 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      * @param string $directory
      * @return mixed
      */
-    public function scandir($directory){
+    public function scandir($directory)
+    {
         return scandir($directory);
+    }
+
+    /**
+     * @param string $directory
+     * @return mixed
+     */
+    public function mkdir($directory)
+    {
+        return mkdir($directory);
+    }
+
+    /**
+     * @param string $directory
+     * @return mixed
+     */
+    public function rmdir($directory)
+    {
+        $this->logWarning("Warning, *** method rmdir utilized *** on directory: " . $directory );
+        if (is_dir($directory) === true) {
+            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory), RecursiveIteratorIterator::CHILD_FIRST);
+
+            foreach ($files as $file) {
+                if (in_array($file->getBasename(), array('.', '..')) !== true) {
+                    if ($file->isDir() === true) {
+                        rmdir($file->getPathName());
+                    } else if (($file->isFile() === true) || ($file->isLink() === true)) {
+                        unlink($file->getPathname());
+                    }
+                }
+            }
+
+            return rmdir($directory);
+        } else if ((is_file($directory) === true) || (is_link($directory) === true)) {
+            return unlink($directory);
+        }
+
+        return false;
+    }
+    public function recursivelyChownDirectory($directory, $owner, $group, $mode){
+        $this->executeCommand("chown -R $owner:$group $directory");
+        $this->executeCommand("chmod -R $mode $directory");
     }
 }

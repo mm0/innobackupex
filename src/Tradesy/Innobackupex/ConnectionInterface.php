@@ -28,12 +28,46 @@ interface ConnectionInterface
      * @return boolean
      */
     function file_exists($file);
+
     /**
      * @return resource
      */
     function getConnection();
 
+    /**
+     * @return boolean
+     */
+    function isSudoAll();
+
+    /**
+     * @param boolean
+     */
+    function setSudoAll($bool);
+
     function verify();
 
+    /**
+     * @param $directory
+     * @return mixed
+     */
     function scandir($directory);
+
+    /**
+     * @param $directory
+     * @return mixed
+     */
+    function mkdir($directory);
+
+    /**
+     * @param $directory
+     * @return mixed
+     */
+    function rmdir($directory);
+
+    /**
+     * @return mixed
+     */
+    function getTemporaryDirectoryPath();
+
+    function recursivelyChownDirectory($directory, $owner, $group, $mode);
 }

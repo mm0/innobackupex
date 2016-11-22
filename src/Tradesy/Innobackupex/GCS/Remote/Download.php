@@ -2,20 +2,47 @@
 
 namespace Tradesy\Innobackupex\GCS\Remote;
 
-use \Tradesy\Innobackupex\SSH\Connection;
+use Tradesy\Innobackupex\Backup\Info;
+use Tradesy\Innobackupex\LoggingTraits;
 use \Tradesy\Innobackupex\ConnectionInterface;
 use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
 
-class Download implements LoadInterface {
-
+/**
+ * Class Download
+ * @package Tradesy\Innobackupex\GCS\Remote
+ */
+class Download implements LoadInterface
+{
+    use LoggingTraits;
+    /**
+     * @var ConnectionInterface
+     */
     protected $connection;
+    /**
+     * @var
+     */
     protected $bucket;
+    /**
+     * @var
+     */
     protected $region;
+    /**
+     * @var
+     */
     protected $source;
+    /**
+     * @var
+     */
     protected $key;
+    /**
+     * @var int
+     */
     protected $concurrency;
+    /**
+     * @var string
+     */
     protected $binary = "gsutil";
 
     /**
@@ -32,20 +59,26 @@ class Download implements LoadInterface {
         $bucket,
         $region,
         $concurrency = 10
-    ){
-        $this->connection               = $connection;
-        $this->bucket                   = $bucket;
-        $this->region                   = $region;
-        $this->concurrency              = $concurrency;
+    )
+    {
+        $this->connection = $connection;
+        $this->bucket = $bucket;
+        $this->region = $region;
+        $this->concurrency = $concurrency;
         $this->testSave();
     }
+
+    /**
+     * @throws BucketNotFoundException
+     * @throws CLINotFoundException
+     */
     public function testSave()
     {
         $command = "which " . $this->binary;
         $response = $this->connection->executeCommand($command);
-        if(strlen($response->stdout()) == 0 || preg_match("/not found/i", $response->stdout())){
+        if (strlen($response->stdout()) == 0 || preg_match("/not found/i", $response->stdout())) {
             throw new CLINotFoundException(
-                $this->binary ." CLI not installed.",
+                $this->binary . " CLI not installed.",
                 0
             );
         }
@@ -54,9 +87,9 @@ class Download implements LoadInterface {
          */
         $command = $this->binary .
             " ls | grep -c " . $this->bucket;
-        echo $command;
+        $this->logInfo(($command));
         $response = $this->connection->executeCommand($command);
-        if(intval($response->stdout())==0){
+        if (intval($response->stdout()) == 0) {
             throw new BucketNotFoundException(
                 "GCS bucket (" . $this->bucket . ")  not found. ",
                 0
@@ -65,18 +98,25 @@ class Download implements LoadInterface {
 
     }
 
+    /**
+     * @param $filename
+     */
     public function save($filename)
     {
         # upload compressed file to s3
-        $command = $this->binary ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
-        echo $command;
+        $command = $this->binary . " s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
+        $this->logInfo($command);
         $response = $this->connection->executeCommand(
             $command
         );
-        echo $response->stdout();
-        echo $response->stderr();
+        $this->logInfo($response->stdout());
+        $this->logError($response->stderr());
 
     }
+
+    /**
+     *
+     */
     public function cleanup()
     {
         /* $command = "sudo rm -f " . $this->getFullPathToBackup();
@@ -86,43 +126,70 @@ class Download implements LoadInterface {
         */
     }
 
-    public function saveBackupInfo(\Tradesy\Innobackupex\Backup\Info $info){
+    /**
+     * @param Info $info
+     */
+    public function saveBackupInfo(Info $info)
+    {
         $serialized = serialize($info);
 
         $response = $this->connection->writeFileContents("/tmp/temporary_backup_info", $serialized);
-        $command = $this->binary . " s3 cp /tmp/temporary_backup_info s3://" . $this->bucket . "/tradesy_percona_backup_info";
-        echo "Upload latest backup info to S3 with command: $command \n";
+        $command = $this->binary
+            . " cp /tmp/temporary_backup_info gs://"
+            . $this->bucket . "/tradesy_percona_backup_info";
+        $this->logInfo("Upload latest backup info to S3 with command: $command");
 
         $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
+        $this->logInfo($response->stdout());
+        $this->logError($response->stderr());
 
     }
-    public function load( \Tradesy\Innobackupex\Backup\Info $info, $filename)
+
+    /**
+     * @param Info $info
+     * @param $filename
+     */
+    public function load(Info $info, $filename)
     {
-        $filename = $info->getLatestFullBackup();
-        # upload compressed file to s3
+        $local_filename = $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename;
+
+        $this->key = DIRECTORY_SEPARATOR . $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename;
+        //  you must create destination directory prior to using gsutil rsync
+
+        $this->logInfo("Creating Directory: " . $local_filename);
+        $this->connection->mkdir($local_filename);
+
         $command = $this->binary
-            ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
-        echo $command;
+            . " -m rsync -r gs://" . $this->bucket . $this->key . " $local_filename";
+        $this->logInfo($command);
         $response = $this->connection->executeCommand(
             $command
         );
-        echo $response->stdout();
-        echo $response->stderr();
+        $this->logInfo($response->stdout());
+        $this->logError($response->stderr());
 
     }
-    public function getBackupInfo($backup_info_filename){
 
-        $response = $this->connection->executeCommand($command);
-        echo $response->stdout();
-        echo $response->stderr();
+    /**
+     * @param $backup_info_filename
+     */
+    public function getBackupInfo($backup_info_filename)
+    {
+
+        /*$response = $this->connection->executeCommand($command);
+        $this->logTrace($response->stdout());
+        $this->logError($response->stderr());*/
 
     }
+
+    /**
+     *
+     */
     public function verify()
     {
 
     }
+
     /**
      * @param mixed $key
      */

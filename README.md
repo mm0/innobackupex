@@ -18,6 +18,9 @@ Requirements
 - (Optional) GCS CLI
 - MySQL Server with enough free disk space to create a backup
 - (Optional) SSH Access to the MySQL Server
+- (Required for SSH) libssh2-php
+- php5-curl (required for guzzle)
+- python-mysqldb # necessary for ansible mysql module
 
 Methodology
 ---
@@ -70,6 +73,7 @@ $encryption_configuration = new \Tradesy\Innobackupex\Encryption\Configuration(
     $key 
 );
 ```
+*** Please note, it is not recommended to store credentials or keys in plaintext within your VCS repositories.  The example above is just an example.  You can either encrypt the backup script, or encrypt a file with the key in it that is loadable by your backup script, or possibly use environment variables or some other solution for sensitive information. ***  
 
 ### SSH Connection Configuration 
 ```
@@ -221,6 +225,8 @@ Load the previous Backup Info serialized file
  
  All of this is automated for your via our Restoration Configuration, Connection and Restore Modules:
  
+ ### ***You must manually remove /var/lib/mysql on your target server in order to commence a Restoration.
+ 
 Load Backup Info Object from disk 
 
 ```
@@ -255,7 +261,6 @@ Create the Restore Object
       $connection,
       [$aws_restore_module],
       $encryption_configuration,                          // Encryption configuration or null
-      $compressed = true,                                 // Specify whether to compress backup
       $parallel_threads = 100,                            // Parallel threads
       $memory = "10G"                                     // Specify RAM Usage
   );
@@ -278,9 +283,77 @@ When ready, simply call the restore method.  All archives will be downloaded via
 15 1-23 * * * /usr/bin/php /var/cli/mysql_backups/CreateIncrementalBackup.php >> /var/log/cron/mysql_backups.log 2>&1
 ```
  
-#### For more examples, please see the `./Examples` directory
+#### For more examples, please see the `./Examples` directory or Tests
  
  
+### Testing
+
+Configuration for AWS/GCS (Optional): 
+
+    You must configure your aws cli by adding api key credentials to:
+      /home/vagrant/.aws/boto
+      
+    and configure gsutil by running 
+        gsutil configure
+        
+     You may have to update tests to reference personal buckets as well.
+        
+        
+Start Vagrant:
+
+```vagrant up```
+
+
+Log into VM:
+
+`vagrant ssh`
+
+
+CD to shared Directory:
+
+`cd /var/www`
+
+
+Install composer packages:
+
+`composer install --dev`
+
+
+Run PHPUnit
+
+`./vendor/bin/phpunit -v --debug`
+
+
+To see full test coverage, run:
+
+    ./vendor/bin/phpunit --debug --verbose  --coverage-html html
+    
+Currently at ~80% Test Coverage, 87.5% with GCS Local Module excluded
+
+####To Reset the Database after failed test suite:
+
+
+On Host: 
+
+```
+vagrant ssh -c 'sudo rm -rf /var/lib/mysql'
+
+
+vagrant provision --provision-with reset_mysql
+```
+ 
+## Known Bugs
+
+GCS Local Module (PHP SDK) Doesn't Work.  This is due to the utilization of `file_get/put_contents` which is unstable for large files.  Please use `GCS\Remote\Upload|Download` Modules instead.
+
+## TODO
+
+* Document usage and implement configurable logging (Monolog).
+* Add more Modules 
+* Add tests for unencrypted and uncompressed (flat) backups
+* Test against non-percona MySQL
+
+
 ## License
 
 Copyright (c) 2016, Matt Margolin

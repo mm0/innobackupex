@@ -2,13 +2,15 @@
 
 namespace Tradesy\Innobackupex\S3\Remote;
 
-use \Tradesy\Innobackupex\SSH\Connection;
 use \Tradesy\Innobackupex\LoadInterface;
 use \Tradesy\Innobackupex\ConnectionInterface;
 use \Tradesy\Innobackupex\Exceptions\CLINotFoundException;
 use \Tradesy\Innobackupex\Exceptions\BucketNotFoundException;
+use \Tradesy\Innobackupex\LoggingTraits;
 
 class Download implements LoadInterface {
+
+    use LoggingTraits;
 
     protected $connection;
     protected $bucket;
@@ -25,21 +27,21 @@ class Download implements LoadInterface {
      * @param $bucket
      * @param $key
      * @param $region
-     * @param bool $remove_file_after_upload
      * @param int $concurrency
+     * @param bool $remove_file_after_upload
      */
     public function __construct(
         ConnectionInterface $connection,
         $bucket,
         $region,
-        $remove_file_after_upload = false,
-        $concurrency = 10
+        $concurrency = 10,
+        $remove_file_after_upload = false
     ){
         $this->connection               = $connection;
         $this->bucket                   = $bucket;
         $this->region                   = $region;
-        $this->remove_file_after_upload = $remove_file_after_upload;
         $this->concurrency              = $concurrency;
+        $this->remove_file_after_upload = $remove_file_after_upload;
         $this->testSave();
     }
     public function testSave()
@@ -54,11 +56,10 @@ class Download implements LoadInterface {
             );
         }
         $command = $this->binary .
-                    " --region " . $this->region .
-                    " s3 ls | grep -c " . $this->bucket;
-        echo $command;
+            " --region " . $this->region .
+            " s3 ls " . $this->bucket ." 2>&1 | grep -c 'AllAccessDisabled\|NoSuchBucket'" ;
         $response = $this->connection->executeCommand($command);
-        if(intval($response->stdout())==0){
+        if(intval($response->stdout())==1){
             throw new BucketNotFoundException(
                 "S3 bucket (" . $this->bucket . ")  not found in region (" . 
                 $this->region .")",
@@ -68,18 +69,20 @@ class Download implements LoadInterface {
 
     }
 
-    public function load( \Tradesy\Innobackupex\Backup\Info $info)
+    public function load( \Tradesy\Innobackupex\Backup\Info $info, $filename)
     {
-        $filename = $info->getLatestFullBackup();
-        # upload compressed file to s3
+        $local_filename = $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename;
+
+        $this->key = DIRECTORY_SEPARATOR . $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename;
         $command = $this->binary 
-            ." s3 sync $filename s3://" . $this->bucket . "/" . $this->key;
-        echo $command;
+            ." s3 sync s3://" . $this->bucket . $this->key . " $local_filename";
+        $this->logDebug($command);
+
         $response = $this->connection->executeCommand(
             $command
         );
-        echo $response->stdout();
-        echo $response->stderr();
+        $this->logDebug($response->stdout());
+        $this->logError($response->stderr());
 
     }
     public function cleanup()

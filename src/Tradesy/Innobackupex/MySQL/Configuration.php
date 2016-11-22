@@ -3,13 +3,14 @@
 namespace Tradesy\Innobackupex\MySQL;
 
 use \Tradesy\Innobackupex\Exceptions\MySQLConnectionException;
+use Tradesy\Innobackupex\LoggingTraits;
 
 /**
  * A utility class, designed to store Mysql credentials
  */
 class Configuration
 {
-
+    use LoggingTraits;
     /**
      * @var string
      */
@@ -64,7 +65,7 @@ class Configuration
      */
     public function verify()
     {
-        $connect = mysqli_connect(
+        $connect = @mysqli_connect(
             $this->host,
             $this->user,
             $this->password,

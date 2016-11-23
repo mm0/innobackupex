@@ -361,31 +361,35 @@ abstract class AbstractBackup
     {
         $this->test_innobackupex_exist();
         $this->start();
-        $this->PerformBackup();
-        $this->SaveBackupInfo();
-        //  $this->ApplyLog();
-        LogEntry::logEntry('Saved to ' . $this->getFullPathToBackup());
-        foreach ($this->save_modules as $saveModule) {
+        if ($this->PerformBackup()) {
+            LogEntry::logEntry('Backup finished successfully');
+            $this->SaveBackupInfo();
+            //  $this->ApplyLog();
+            LogEntry::logEntry('Saved to ' . $this->getFullPathToBackup());
+            foreach ($this->save_modules as $saveModule) {
 
-            $saveModule->setKey(
-                $this->BackupInfo->getRepositoryBaseName() .
-                DIRECTORY_SEPARATOR .
-                $this->getRelativebackupdirectory()
-            );
-            $saveModule->save($this->getFullPathToBackup());
-            /*
-             * optionally store backup info with save modules
-             */
-            $saveModule->saveBackupInfo($this->BackupInfo, $this->getBackupInfoFilename());
+                $saveModule->setKey(
+                    $this->BackupInfo->getRepositoryBaseName() .
+                    DIRECTORY_SEPARATOR .
+                    $this->getRelativebackupdirectory()
+                );
+                $saveModule->save($this->getFullPathToBackup());
+                /*
+                 * optionally store backup info with save modules
+                 */
+                $saveModule->saveBackupInfo($this->BackupInfo, $this->getBackupInfoFilename());
 
-            if ($this instanceof Full) {
-                // Let's also save information for full backup
-                $saveModule->saveBackupInfo($this->BackupInfo, $this->getFullBackupInfoFilename());
+                if ($this instanceof Full) {
+                    // Let's also save information for full backup
+                    $saveModule->saveBackupInfo($this->BackupInfo, $this->getFullBackupInfoFilename());
+                }
+
+                $saveModule->cleanup();
             }
-
-            $saveModule->cleanup();
+            $this->PostHook();
+        } else {
+            LogEntry::logEntry('[Error] Backup had issues');
         }
-        $this->PostHook();
         $this->end();
     }
 
@@ -438,6 +442,10 @@ abstract class AbstractBackup
 
     abstract function SaveBackupInfo();
 
+    /**
+     * Perform the backup. Returns true when the backup finished successfully, false otherwise.
+     *
+     * @return bool
+     */
     abstract function PerformBackup();
-
 }

@@ -234,7 +234,7 @@ class Mysql
      */
     protected function MarkDirectoryAsPrepared($directory)
     {
-        LogEntry::logEntry(('Writing ' . $directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file);
+        LogEntry::logEntry('Writing ' . $directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file);
         $this->getConnection()->writeFileContents($directory . DIRECTORY_SEPARATOR . $this->prepare_flag_file, "");
     }
 

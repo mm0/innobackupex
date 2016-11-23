@@ -12,13 +12,14 @@ use Tradesy\Innobackupex\LogEntry;
  */
 class Full extends AbstractBackup
 {
-
     /**
      * @var string
      */
     protected $save_directory_prefix = "full_backup_";
-    
 
+    /**
+     * @inheritdoc
+     */
     public function PerformBackup()
     {
         $user = $this->getMysqlConfiguration()->getUsername();
@@ -66,8 +67,13 @@ class Full extends AbstractBackup
 
         $response = $this->getConnection()->executeCommand($command);
 
-        LogEntry::logEntry('STDOUT: ' . str_replace($encryption_key, '********', $response->stdout()));
-        LogEntry::logEntry('STDERR: ' . str_replace($encryption_key, '********', $response->stderr()));
+        $out = str_replace($encryption_key, '********', $response->stdout());
+        $err = str_replace($encryption_key, '********', $response->stderr());
+        LogEntry::logEntry('STDOUT: ' . $out);
+        LogEntry::logEntry('STDERR: ' . $err);
+
+        // Return true when stdout finished correctly
+        return (strpos($out, 'innobackupex: completed OK!') !== false);
     }
 
     public function SaveBackupInfo()

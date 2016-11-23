@@ -69,24 +69,24 @@ class Download implements LoadInterface
         //$filename = $info->getLatestFullBackup();
         LogEntry::logEntry('downloading ' . $filename);
         LogEntry::logEntry('Saving to: '  . $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR);
-        $service = new \Google_Service_Storage($this->client);
-        $object = $service->objects->get( $this->bucket, $filename )->;
-        $request = new Google_Http_Request($object['mediaLink'], 'GET');
-        $signed_request = $this->client->getAuth()->sign($request);
-        $http_request = $this->client->getIo()->makeRequest($signed_request);
-        LogEntry::logEntry('Response received: ' . $http_request->getResponseBody());
-
-
-        $this->client->downloadBucket(
-            $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename ,
-            $this->bucket,
-            DIRECTORY_SEPARATOR . $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename,
-            [
-                "allow_resumable" => false,
-                "concurrency" => $this->concurrency,
-                "base_dir" => $info->getRepositoryBaseName(). DIRECTORY_SEPARATOR . $filename,
-                "debug" => true
-            ]);
+//        $service = new \Google_Service_Storage($this->client);
+//        $object = $service->objects->get( $this->bucket, $filename )->;
+//        $request = new Google_Http_Request($object['mediaLink'], 'GET');
+//        $signed_request = $this->client->getAuth()->sign($request);
+//        $http_request = $this->client->getIo()->makeRequest($signed_request);
+//        LogEntry::logEntry('Response received: ' . $http_request->getResponseBody());
+//
+//
+//        $this->client->downloadBucket(
+//            $info->getBaseBackupDirectory() . DIRECTORY_SEPARATOR . $filename ,
+//            $this->bucket,
+//            DIRECTORY_SEPARATOR . $info->getRepositoryBaseName() . DIRECTORY_SEPARATOR . $filename,
+//            [
+//                "allow_resumable" => false,
+//                "concurrency" => $this->concurrency,
+//                "base_dir" => $info->getRepositoryBaseName(). DIRECTORY_SEPARATOR . $filename,
+//                "debug" => true
+//            ]);
     }
 
     public function cleanup()

@@ -217,7 +217,7 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
     function file_exists($file){
         // Note: This might cause segfault if file doesn't exist due to ssh2 lib bug
         $sftp = ssh2_sftp($this->getConnection());
-        return file_exists('ssh2.sftp://' . $sftp . $file);
+        return file_exists('ssh2.sftp://' . intval($sftp) . $file);
     }
     
     /**
@@ -226,6 +226,6 @@ class Connection implements \Tradesy\Innobackupex\ConnectionInterface
      */
     public function scandir($directory){
         $sftp = ssh2_sftp($this->getConnection());
-        return scandir('ssh2.sftp://' . $sftp . $directory);
+        return scandir('ssh2.sftp://' . intval($sftp) . $directory);
     }
 }
